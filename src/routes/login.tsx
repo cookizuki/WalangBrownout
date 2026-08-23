@@ -4,6 +4,7 @@ import { authenticate, listAccounts, roleLabel, ROLES, signIn, DEMO_PASSWORD, ty
 import { FadeContent } from "@/components/FadeContent";
 import { AuthThemeToggle } from "@/components/AuthThemeToggle";
 import { DotField } from "@/components/DotField";
+import { BlurText } from "@/components/BlurText";
 import wbLogo from "@/assets/WB LOGO.jpg";
 
 export const Route = createFileRoute("/login")({
@@ -67,7 +68,9 @@ function LoginPage() {
           <form onSubmit={submit} className="card-surface mt-6 p-6 sm:p-8">
             <div className="text-center">
               <h1 className="font-display text-2xl font-semibold sm:text-3xl">Log In</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Walang Kulang, Walang Sobra.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                <BlurText text="Walang Kulang, Walang Sobra." delay={300} />
+              </p>
             </div>
 
             <label className="mt-6 block">
