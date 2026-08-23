@@ -2,7 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { createAccount, emailTaken, ROLES, signIn, type Role } from "@/lib/auth";
 import { FadeContent } from "@/components/FadeContent";
-import wbLogoInfo from "@/assets/wb-logo.jpg.asset.json";
+import { DotField } from "@/components/DotField";
+import { AuthThemeToggle } from "@/components/AuthThemeToggle";
 import wbLogo from "@/assets/WB LOGO.jpg";
 
 export const Route = createFileRoute("/signup")({
@@ -57,26 +58,27 @@ function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/40 px-4 py-8 sm:px-6 sm:py-12">
-      <div className="mx-auto w-full max-w-3xl">
+    <div className="relative min-h-screen overflow-hidden bg-muted/40 px-4 py-10 sm:px-6 sm:py-16">
+      <DotField />
+      <AuthThemeToggle />
+
+      <div className="relative z-10 mx-auto w-full max-w-xl">
         <FadeContent>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-center text-center">
             <img
               src={wbLogo}
               alt="WalangBrownout logo"
-              className="h-8 w-8 rounded-md object-contain"
+              className="h-12 w-12 rounded-xl object-contain"
             />
-            <span className="font-semibold">WalangBrownout · Inventory OS</span>
           </div>
         </FadeContent>
 
-        <FadeContent delay={80}>
-          <p className="mb-2 mt-6 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Sign up form
-          </p>
-          <form onSubmit={submit} className="card-surface p-5 sm:p-7">
-            <h1 className="font-display text-2xl font-semibold sm:text-3xl">Create an account</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Walang Kulang, Walang Sobra.</p>
+        <FadeContent delay={60}>
+          <form onSubmit={submit} className="card-surface mt-6 p-6 sm:p-8">
+            <div className="text-center">
+              <h1 className="font-display text-2xl font-semibold sm:text-3xl">Create an account</h1>
+              <p className="mt-1 text-sm text-muted-foreground">Walang Kulang, Walang Sobra.</p>
+            </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <label className="block">
@@ -176,7 +178,7 @@ function SignUpPage() {
               Sign Up
             </button>
 
-            <p className="mt-5 text-xs text-muted-foreground">
+            <p className="mt-5 text-center text-xs text-muted-foreground">
               Already have an account?{" "}
               <Link to="/login" className="font-semibold text-foreground underline underline-offset-2">
                 Log in

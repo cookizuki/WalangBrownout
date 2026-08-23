@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { authenticate, listAccounts, roleLabel, ROLES, signIn, DEMO_PASSWORD, type Account, type Role } from "@/lib/auth";
 import { FadeContent } from "@/components/FadeContent";
+import { AuthThemeToggle } from "@/components/AuthThemeToggle";
+import { DotField } from "@/components/DotField";
 import wbLogo from "@/assets/WB LOGO.jpg";
 
 export const Route = createFileRoute("/login")({
@@ -47,8 +49,10 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/40 px-4 py-10 sm:px-6 sm:py-16">
-      <div className="mx-auto w-full max-w-md">
+      <div className="relative min-h-screen overflow-hidden bg-muted/40 px-4 py-10 sm:px-6 sm:py-16">
+      <DotField />
+      <AuthThemeToggle />
+      <div className="relative z-10 mx-auto w-full max-w-md">
         <FadeContent>
           <div className="flex flex-col items-center text-center">
             <img
