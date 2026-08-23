@@ -5,6 +5,7 @@ import {
   purchaseOrders, receivingLines, ropSeasonal, ropStandard, suppliers, transactions,
   money, type ABC, type Alert, type AlertType,
 } from "@/lib/inventory-data";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { roleLabel, useSession, type Role } from "@/lib/auth";
 import { CountUp } from "@/components/CountUp";
 import { AnimatedItem } from "@/components/AnimatedList";
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui-bits";
 import wbLogoInfo from "@/assets/wb-logo.jpg.asset.json";
 import wbLogo from "@/assets/WB LOGO.jpg";
+
 
 
 export const Route = createFileRoute("/")({
@@ -277,10 +279,12 @@ function SideNav({
             <div className="truncate text-xs text-muted-foreground">{role}</div>
           </div>
         </div>
+        <div className="mt-3">
+          <ThemeToggle />
+        </div>
         <button
           onClick={onSignOut}
-          className="mt-3 w-full rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted"
-        >
+          className="mt-2 w-full rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted">
           Sign out
         </button>
       </div>
