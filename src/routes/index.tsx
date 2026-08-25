@@ -15,6 +15,7 @@ import {
   Th, Td, SectionLabel, Panel, TaskPill, StatusPill, AnimatedRow,
   TimeAgo, daysLeft, titleCase,
 } from "@/components/ui-bits";
+import { DraftPOAction } from "@/components/DraftPOAction";
 import wbLogoInfo from "@/assets/wb-logo.jpg.asset.json";
 import wbLogo from "@/assets/WB LOGO.jpg";
 
@@ -40,7 +41,7 @@ type Tab =
   | "picks" | "receiving" | "admin";
 
 const PAGE_META: Record<Tab, { title: string; subtitle: string }> = {
-  overview: { title: "Overview", subtitle: "Page subtitle — real-time system status" },
+  overview: { title: "Overview", subtitle: "Real-time status" },
   inventory: { title: "Inventory", subtitle: "All tracked SKUs, live stock levels" },
   batches: { title: "Batches", subtitle: "FIFO-ordered lots and expiry tracking" },
   alerts: { title: "Alerts", subtitle: "Reorder and expiry notifications" },
@@ -198,7 +199,7 @@ function Dashboard() {
             <StockCountsPage mode={account.role === "WAREHOUSE_STAFF" ? "entry" : "review"} />
           )}
           {tab === "txlog" && <TransactionLogPage />}
-          {tab === "reorder" && <ReorderReviewPage />}
+          {tab === "reorder" && <ReorderReviewPage requestedBy={account.name} />}
           {tab === "picks" && <PickTasksPage />}
           {tab === "receiving" && <ReceivingPage />}
           {tab === "admin" && account.role === "ADMIN" && <AdminPage />}
@@ -746,7 +747,9 @@ function MyDayPage({ role, name, alerts }: { role: Role; name: string; alerts: A
 
 /* ------------------------ Inventory staff: reorder ------------------------ */
 
-function ReorderReviewPage() {
+function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
+
+  
   const rows = products
     .map(p => {
       const qty = onHand(p.sku);
@@ -766,7 +769,7 @@ function ReorderReviewPage() {
               <thead className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
                 <tr className="border-b border-border">
                   <Th>SKU</Th><Th>Product</Th><Th>On Hand / ROP</Th><Th>Formula</Th>
-                  <Th>Suggested Qty</Th><Th>Est. Cost</Th>
+                  <Th>Suggested Qty</Th><Th>Est. Cost</Th><Th>{" "}</Th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-dashed divide-border">
@@ -782,6 +785,9 @@ function ReorderReviewPage() {
                     </Td>
                     <Td className="font-mono">{p.reorderQuantity}</Td>
                     <Td className="font-mono text-xs">{money(p.reorderQuantity * p.unitCost)}</Td>
+                    <Td>
+                      <DraftPOAction sku={p.sku} quantity={p.reorderQuantity} requestedBy={requestedBy} />
+                    </Td>
                   </tr>
                 ))}
                 {rows.length === 0 && (

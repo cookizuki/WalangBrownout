@@ -1,14 +1,18 @@
-// Shared mutable operations store: batches, cycle counts and transaction log.
-// One source of truth — every role reads the same data, filtered/permissioned
-// differently in the UI.
+// Shared mutable operations store: batches, cycle counts, transaction log,
+// and pending purchase orders. One source of truth — every role reads the
+// same data, filtered/permissioned differently in the UI.
 
 import { useSyncExternalStore } from "react";
 import {
   batches as seedBatches,
   cycleCounts as seedCounts,
   transactions as seedTx,
+  pendingApprovals as seedPendingPOs,
+  products,
+  suppliers,
   type CycleCount,
   type InventoryBatch,
+  type PendingPO,
   type TxLog,
 } from "./inventory-data";
 
@@ -18,12 +22,14 @@ interface OpsState {
   batches: InventoryBatch[];
   counts: CycleCount[];
   transactions: TxLog[];
+  pendingPOs: PendingPO[];
 }
 
 let state: OpsState = {
   batches: seedBatches.map(b => ({ ...b })),
   counts: seedCounts.map(c => ({ ...c })),
   transactions: seedTx.map(t => ({ ...t })),
+  pendingPOs: seedPendingPOs.map(p => ({ ...p })),
 };
 
 const listeners = new Set<() => void>();
@@ -42,6 +48,9 @@ export function useOps(): OpsState {
 
 let seq = 1;
 const nextTxId = () => `T-95${String(seq++).padStart(2, "0")}`;
+
+let poSeq = 43;
+const nextPOId = () => `PO-20${poSeq++}`;
 
 /** Warehouse staff submits a physical count; variance logs an ADJUSTMENT tx. */
 export function submitCount(countId: string, countedQty: number, userId = 4) {
@@ -78,7 +87,7 @@ export function submitCount(countId: string, countedQty: number, userId = 4) {
     ];
   }
 
-  state = { batches, counts, transactions };
+  state = { ...state, batches, counts, transactions };
   emit();
 }
 
@@ -116,6 +125,36 @@ export function reportAdjustment(input: {
       ...state.transactions,
     ],
   };
+  emit();
+}
+
+/**
+ * Inventory Staff drafts a PO from a Reorder Review suggestion — it lands
+ * directly in the Admin approval queue, live.
+ */
+export function draftPO(input: { sku: string; quantity: number; requestedBy: string }) {
+  const p = products.find(pp => pp.sku === input.sku);
+  if (!p) return;
+  const supplier = suppliers.find(s => s.id === p.supplierId);
+
+  const po: PendingPO = {
+    id: nextPOId(),
+    supplier: supplier?.name ?? "Unknown supplier",
+    sku: p.sku,
+    itemLabel: p.name,
+    quantity: input.quantity,
+    totalCost: input.quantity * p.unitCost,
+    requestedBy: input.requestedBy,
+    requestedAt: new Date().toISOString().slice(0, 10),
+  };
+
+  state = { ...state, pendingPOs: [po, ...state.pendingPOs] };
+  emit();
+}
+
+/** Admin approves or rejects a pending PO — removes it from the queue. */
+export function resolvePendingPO(id: string) {
+  state = { ...state, pendingPOs: state.pendingPOs.filter(po => po.id !== id) };
   emit();
 }
 

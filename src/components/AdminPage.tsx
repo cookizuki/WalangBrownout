@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { AnimatedItem } from "@/components/AnimatedList";
 import { FadeContent } from "@/components/FadeContent";
-import { money, pendingApprovals, type PendingPO } from "@/lib/inventory-data";
+import { useOps, resolvePendingPO } from "@/lib/ops-store";
+import { money } from "@/lib/inventory-data";
 import { createAccount, DEMO_PASSWORD, listAccounts, ROLES, roleLabel, type Account, type Role } from "@/lib/auth";
 
 const initials = (name: string) =>
@@ -10,7 +11,7 @@ const initials = (name: string) =>
 export function AdminPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [pending, setPending] = useState<PendingPO[]>(pendingApprovals);
+  const { pendingPOs: pending } = useOps();
   const [leaving, setLeaving] = useState<string[]>([]);
 
   useEffect(() => setAccounts(listAccounts()), []);
@@ -18,7 +19,10 @@ export function AdminPage() {
   const resolvePO = (id: string) => {
     if (leaving.includes(id)) return;
     setLeaving(l => [...l, id]);
-    window.setTimeout(() => setPending(p => p.filter(po => po.id !== id)), 350);
+    window.setTimeout(() => {
+      resolvePendingPO(id);
+      setLeaving(l => l.filter(x => x !== id));
+    }, 350);
   };
 
   return (
