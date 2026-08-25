@@ -946,7 +946,7 @@ function ReceivingPage() {
                       <Td className="text-muted-foreground">{r.expectedDate}</Td>
                       <Td className="font-mono text-xs">{loc?.code}</Td>
                       <Td>
-                        <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+                        <span className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
                           r.status === "IN_TRANSIT" ? "border-warning/50 text-warning"
                           : r.status === "ARRIVED" ? "border-info/50 text-info"
                           : "border-success/40 text-success"
