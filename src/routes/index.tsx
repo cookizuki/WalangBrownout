@@ -16,6 +16,10 @@ import {
   TimeAgo, daysLeft, titleCase,
 } from "@/components/ui-bits";
 import { DraftPOAction } from "@/components/DraftPOAction";
+import { useOps } from "@/lib/ops-store";
+import { FIFOExceptionPopover } from "@/components/FIFOExceptionPopover";
+import { ReceivingEntryModal } from "@/components/ReceivingEntryModal";
+import { QuickActionMenu } from "@/components/QuickActionMenu";
 import wbLogoInfo from "@/assets/wb-logo.jpg.asset.json";
 import wbLogo from "@/assets/WB LOGO.jpg";
 
@@ -204,6 +208,7 @@ function Dashboard() {
           {tab === "receiving" && <ReceivingPage />}
           {tab === "admin" && account.role === "ADMIN" && <AdminPage />}
         </main>
+          {(account.role === "WAREHOUSE_STAFF" || account.role === "ADMIN") && <QuickActionMenu />}
       </div>
     </div>
   );
@@ -830,6 +835,7 @@ function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
 /* ------------------- Warehouse staff: picks & receiving ------------------- */
 
 function PickTasksPage() {
+  const { pickTasks } = useOps();
   const [done, setDone] = useState<string[]>([]);
   const order = { HIGH: 0, NORMAL: 1, LOW: 2 } as const;
   const rows = [...pickTasks].sort((a, b) => order[a.priority] - order[b.priority]);
@@ -847,11 +853,11 @@ function PickTasksPage() {
         footer="Picking a different lot than the assigned batch breaks FIFO and raises a variance alert"
       >
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-sm">
+          <table className="w-full min-w-[900px] text-sm">
             <thead className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
               <tr className="border-b border-border">
                 <Th>Task</Th><Th>Product</Th><Th>Pick From</Th><Th>Qty</Th>
-                <Th>Order</Th><Th>Priority</Th><Th>Status</Th><Th>{" "}</Th>
+                <Th>Order</Th><Th>Priority</Th><Th>Status</Th><Th>{" "}</Th><Th>{" "}</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-dashed divide-border">
@@ -888,6 +894,9 @@ function PickTasksPage() {
                         </button>
                       )}
                     </Td>
+                    <Td>
+                      {status !== "DONE" && <FIFOExceptionPopover taskId={t.id} />}
+                    </Td>
                   </tr>
                 );
               })}
@@ -900,17 +909,20 @@ function PickTasksPage() {
 }
 
 function ReceivingPage() {
+  const { receivingLines, batches } = useOps();
+  const [receivingLine, setReceivingLine] = useState<string | null>(null);
+
   return (
     <div className="space-y-5">
       <div className="space-y-2">
         <SectionLabel>Inbound panel — one row per PO line</SectionLabel>
         <Panel title="Receiving & Putaway" footer="Receiving creates a new inventory batch stamped with date received and its warehouse location">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-sm">
+            <table className="w-full min-w-[880px] text-sm">
               <thead className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
                 <tr className="border-b border-border">
                   <Th>Line</Th><Th>PO</Th><Th>Product</Th><Th>Supplier</Th>
-                  <Th>Ordered / Received</Th><Th>ETA</Th><Th>Putaway</Th><Th>Status</Th>
+                  <Th>Ordered / Received</Th><Th>ETA</Th><Th>Putaway</Th><Th>Status</Th><Th>{" "}</Th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-dashed divide-border">
@@ -918,6 +930,7 @@ function ReceivingPage() {
                   const p = products.find(pp => pp.sku === r.sku);
                   const s = suppliers.find(su => su.id === r.supplierId);
                   const loc = locations.find(l => l.id === r.locationId);
+                  const canReceive = r.status !== "PUT_AWAY";
                   return (
                     <tr key={r.id} className="hover:bg-muted/40">
                       <Td className="font-mono text-xs">{r.id}</Td>
@@ -935,6 +948,16 @@ function ReceivingPage() {
                         }`}>
                           {titleCase(r.status)}
                         </span>
+                      </Td>
+                      <Td>
+                        {canReceive && (
+                          <button
+                            onClick={() => setReceivingLine(r.id)}
+                            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+                          >
+                            Receive
+                          </button>
+                        )}
                       </Td>
                     </tr>
                   );
@@ -965,6 +988,19 @@ function ReceivingPage() {
           })}
         </div>
       </div>
+
+      {receivingLine && (() => {
+        const line = receivingLines.find(r => r.id === receivingLine);
+        if (!line) return null;
+        const productName = products.find(pp => pp.sku === line.sku)?.name ?? line.sku;
+        return (
+          <ReceivingEntryModal
+            line={line}
+            productName={productName}
+            onClose={() => setReceivingLine(null)}
+          />
+        );
+      })()}
     </div>
   );
 }

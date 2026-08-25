@@ -1,6 +1,6 @@
 // Shared mutable operations store: batches, cycle counts, transaction log,
-// and pending purchase orders. One source of truth — every role reads the
-// same data, filtered/permissioned differently in the UI.
+// pending purchase orders, and inbound receiving lines. One source of truth —
+// every role reads the same data, filtered/permissioned differently in the UI.
 
 import { useSyncExternalStore } from "react";
 import {
@@ -8,11 +8,15 @@ import {
   cycleCounts as seedCounts,
   transactions as seedTx,
   pendingApprovals as seedPendingPOs,
+  receivingLines as seedReceivingLines,
+  pickTasks as seedPickTasks,
   products,
   suppliers,
   type CycleCount,
   type InventoryBatch,
   type PendingPO,
+  type PickTask,
+  type ReceivingLine,
   type TxLog,
 } from "./inventory-data";
 
@@ -23,6 +27,8 @@ interface OpsState {
   counts: CycleCount[];
   transactions: TxLog[];
   pendingPOs: PendingPO[];
+  pickTasks: PickTask[];
+  receivingLines: ReceivingLine[];
 }
 
 let state: OpsState = {
@@ -30,6 +36,8 @@ let state: OpsState = {
   counts: seedCounts.map(c => ({ ...c })),
   transactions: seedTx.map(t => ({ ...t })),
   pendingPOs: seedPendingPOs.map(p => ({ ...p })),
+  pickTasks: seedPickTasks.map(t => ({ ...t })),
+  receivingLines: seedReceivingLines.map(r => ({ ...r })),
 };
 
 const listeners = new Set<() => void>();
@@ -51,6 +59,9 @@ const nextTxId = () => `T-95${String(seq++).padStart(2, "0")}`;
 
 let poSeq = 43;
 const nextPOId = () => `PO-20${poSeq++}`;
+
+let batchSeq = 1200;
+const nextBatchId = () => `B-${batchSeq++}`;
 
 /** Warehouse staff submits a physical count; variance logs an ADJUSTMENT tx. */
 export function submitCount(countId: string, countedQty: number, userId = 4) {
@@ -155,6 +166,150 @@ export function draftPO(input: { sku: string; quantity: number; requestedBy: str
 /** Admin approves or rejects a pending PO — removes it from the queue. */
 export function resolvePendingPO(id: string) {
   state = { ...state, pendingPOs: state.pendingPOs.filter(po => po.id !== id) };
+  emit();
+}
+
+/**
+ * Warehouse Staff receives an inbound PO line: creates a real Inventory Batch
+ * stamped with today's date and the line's warehouse location, logs a RECEIPT
+ * transaction, and marks the line PUT_AWAY.
+ */
+export function receiveDelivery(input: {
+  lineId: string;
+  quantityReceived: number;
+  expirationDate?: string;
+  userId?: number;
+}) {
+  const line = state.receivingLines.find(r => r.id === input.lineId);
+  if (!line || !input.quantityReceived) return;
+
+  const newBatch: InventoryBatch = {
+    id: nextBatchId(),
+    sku: line.sku,
+    locationId: line.locationId,
+    quantityReceived: input.quantityReceived,
+    quantityRemaining: input.quantityReceived,
+    dateReceived: new Date().toISOString().slice(0, 10),
+    expirationDate: input.expirationDate || undefined,
+  };
+
+  state = {
+    ...state,
+    batches: [newBatch, ...state.batches],
+    receivingLines: state.receivingLines.map(r =>
+      r.id === line.id
+        ? { ...r, quantityReceived: input.quantityReceived, status: "PUT_AWAY" as const }
+        : r,
+    ),
+    transactions: [
+      {
+        id: nextTxId(),
+        batchId: newBatch.id,
+        sku: line.sku,
+        userId: input.userId ?? 4,
+        type: "RECEIPT",
+        quantityDelta: input.quantityReceived,
+        timestamp: new Date().toISOString(),
+        channel: "WAREHOUSE",
+      },
+      ...state.transactions,
+    ],
+  };
+  emit();
+}
+
+/** Ad-hoc movement: Return (+qty), Write-Off (-qty), or Transfer (location change, qty unchanged). */
+export function logMovement(input: {
+  batchId: string;
+  type: "RETURN" | "TRANSFER" | "WRITE_OFF";
+  quantity: number;
+  toLocationId?: number;
+  userId?: number;
+}) {
+  const batch = state.batches.find(b => b.id === input.batchId);
+  if (!batch || !input.quantity) return;
+
+  let delta = 0;
+  let batches = state.batches;
+
+  if (input.type === "RETURN") {
+    delta = Math.abs(input.quantity);
+    batches = state.batches.map(b =>
+      b.id === batch.id ? { ...b, quantityRemaining: b.quantityRemaining + delta } : b,
+    );
+  } else if (input.type === "WRITE_OFF") {
+    delta = -Math.abs(input.quantity);
+    batches = state.batches.map(b =>
+      b.id === batch.id ? { ...b, quantityRemaining: Math.max(0, b.quantityRemaining + delta) } : b,
+    );
+  } else if (input.type === "TRANSFER" && input.toLocationId) {
+    delta = 0;
+    batches = state.batches.map(b =>
+      b.id === batch.id ? { ...b, locationId: input.toLocationId! } : b,
+    );
+  }
+
+  state = {
+    ...state,
+    batches,
+    transactions: [
+      {
+        id: nextTxId(),
+        batchId: batch.id,
+        sku: batch.sku,
+        userId: input.userId ?? 4,
+        type: input.type,
+        quantityDelta: delta,
+        timestamp: new Date().toISOString(),
+        channel: "WAREHOUSE",
+      },
+      ...state.transactions,
+    ],
+  };
+  emit();
+}
+/**
+ * Warehouse staff flags the currently-assigned (#1 NEXT) batch as damaged or
+ * missing. Writes off its remaining quantity and reassigns the pick task to
+ * the next available unexpired batch for that SKU, unlocking it automatically.
+ */
+export function reportFifoIssue(taskId: string, reason: "DAMAGED" | "MISSING", userId = 4) {
+  const task = state.pickTasks.find(t => t.id === taskId);
+  if (!task) return;
+  const batch = state.batches.find(b => b.id === task.batchId);
+  if (!batch) return;
+
+  const writeOffQty = batch.quantityRemaining;
+
+  const batches = state.batches.map(b =>
+    b.id === batch.id ? { ...b, quantityRemaining: 0 } : b,
+  );
+
+  const nextBatch = fifoBatches(task.sku, batches)[0] ?? null;
+
+  state = {
+    ...state,
+    batches,
+    pickTasks: state.pickTasks.map(t =>
+      t.id === taskId
+        ? { ...t, batchId: nextBatch?.id ?? t.batchId, locationId: nextBatch?.locationId ?? t.locationId }
+        : t,
+    ),
+    transactions: [
+      {
+        id: nextTxId(),
+        batchId: batch.id,
+        sku: batch.sku,
+        userId,
+        type: "WRITE_OFF",
+        quantityDelta: -writeOffQty,
+        timestamp: new Date().toISOString(),
+        channel: "WAREHOUSE",
+        note: `${reason} — flagged via FIFO exception on ${taskId}`,
+      } as TxLog & { note?: string },
+      ...state.transactions,
+    ],
+  };
   emit();
 }
 
