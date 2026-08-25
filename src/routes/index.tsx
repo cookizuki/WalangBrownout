@@ -437,6 +437,7 @@ type Pill = "All" | "Class A" | "Class B" | "Class C" | "FIFO-critical";
 
 function InventoryPage({ query, canExport = false }: { query: string; canExport?: boolean }) {
   const [pill, setPill] = useState<Pill>("All");
+  const { products } = useOps();
   const q = query.trim().toLowerCase();
 
   const rows = products

@@ -3,6 +3,8 @@ import { AnimatedItem } from "@/components/AnimatedList";
 import { FadeContent } from "@/components/FadeContent";
 import { useOps, resolvePendingPO } from "@/lib/ops-store";
 import { money } from "@/lib/inventory-data";
+import { addProduct } from "@/lib/ops-store";
+import { ProductFormModal } from "@/components/ProductFormModal";
 import { createAccount, DEMO_PASSWORD, listAccounts, ROLES, roleLabel, type Account, type Role } from "@/lib/auth";
 
 const initials = (name: string) =>
@@ -13,6 +15,7 @@ export function AdminPage() {
   const [showForm, setShowForm] = useState(false);
   const { pendingPOs: pending } = useOps();
   const [leaving, setLeaving] = useState<string[]>([]);
+  const [showProductForm, setShowProductForm] = useState(false);
 
   useEffect(() => setAccounts(listAccounts()), []);
 
@@ -174,6 +177,31 @@ export function AdminPage() {
           </div>
         </div>
       </section>
+            {/* Section 3 — product catalog */}
+      <section className="space-y-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Section 3 — product catalog (System Administrator responsibility)
+        </p>
+        <div className="card-surface flex items-center justify-between px-5 py-4">
+          <div>
+            <h2 className="text-sm font-semibold">Products</h2>
+            <p className="text-xs text-muted-foreground">Add new SKUs to the catalog</p>
+          </div>
+          <button
+            onClick={() => setShowProductForm(true)}
+            className="rounded-md bg-foreground px-4 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
+          >
+            + Add Product
+          </button>
+        </div>
+      </section>
+
+      {showProductForm && (
+        <ProductFormModal
+          onClose={() => setShowProductForm(false)}
+          onSave={v => { addProduct(v); setShowProductForm(false); }}
+        />
+      )}
     </div>
   );
 }

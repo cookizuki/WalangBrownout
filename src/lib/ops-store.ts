@@ -1,6 +1,7 @@
 // Shared mutable operations store: batches, cycle counts, transaction log,
-// pending purchase orders, and inbound receiving lines. One source of truth —
-// every role reads the same data, filtered/permissioned differently in the UI.
+// pending purchase orders, receiving lines, pick tasks, and products.
+// One source of truth — every role reads the same data, filtered/permissioned
+// differently in the UI.
 
 import { useSyncExternalStore } from "react";
 import {
@@ -10,12 +11,14 @@ import {
   pendingApprovals as seedPendingPOs,
   receivingLines as seedReceivingLines,
   pickTasks as seedPickTasks,
-  products,
+  products as seedProducts,
   suppliers,
+  type ABC,
   type CycleCount,
   type InventoryBatch,
   type PendingPO,
   type PickTask,
+  type Product,
   type ReceivingLine,
   type TxLog,
 } from "./inventory-data";
@@ -27,8 +30,9 @@ interface OpsState {
   counts: CycleCount[];
   transactions: TxLog[];
   pendingPOs: PendingPO[];
-  pickTasks: PickTask[];
   receivingLines: ReceivingLine[];
+  pickTasks: PickTask[];
+  products: Product[];
 }
 
 let state: OpsState = {
@@ -36,8 +40,9 @@ let state: OpsState = {
   counts: seedCounts.map(c => ({ ...c })),
   transactions: seedTx.map(t => ({ ...t })),
   pendingPOs: seedPendingPOs.map(p => ({ ...p })),
-  pickTasks: seedPickTasks.map(t => ({ ...t })),
   receivingLines: seedReceivingLines.map(r => ({ ...r })),
+  pickTasks: seedPickTasks.map(t => ({ ...t })),
+  products: seedProducts.map(p => ({ ...p })),
 };
 
 const listeners = new Set<() => void>();
@@ -144,7 +149,7 @@ export function reportAdjustment(input: {
  * directly in the Admin approval queue, live.
  */
 export function draftPO(input: { sku: string; quantity: number; requestedBy: string }) {
-  const p = products.find(pp => pp.sku === input.sku);
+  const p = state.products.find(pp => pp.sku === input.sku);
   if (!p) return;
   const supplier = suppliers.find(s => s.id === p.supplierId);
 
@@ -268,6 +273,7 @@ export function logMovement(input: {
   };
   emit();
 }
+
 /**
  * Warehouse staff flags the currently-assigned (#1 NEXT) batch as damaged or
  * missing. Writes off its remaining quantity and reassigns the pick task to
@@ -310,6 +316,34 @@ export function reportFifoIssue(taskId: string, reason: "DAMAGED" | "MISSING", u
       ...state.transactions,
     ],
   };
+  emit();
+}
+
+/** Administrator adds a new SKU to the catalog. */
+export function addProduct(input: {
+  sku: string; name: string; unitCost: number; reorderPoint: number;
+  leadTimeDays: number; abc: ABC; seasonalFlag: boolean;
+}) {
+  if (state.products.some(p => p.sku === input.sku)) return;
+
+  const newProduct: Product = {
+    sku: input.sku,
+    name: input.name,
+    categoryId: 1,
+    supplierId: suppliers[0]?.id ?? 1,
+    unitCost: input.unitCost,
+    reorderPoint: input.reorderPoint,
+    reorderQuantity: input.reorderPoint * 2,
+    leadTimeDays: input.leadTimeDays,
+    seasonalFlag: input.seasonalFlag,
+    isFifoCritical: false,
+    abc: input.abc,
+    avgDailyUsage: Math.max(1, Math.round(input.reorderPoint / (input.leadTimeDays + 10))),
+    seasonalFactor: input.seasonalFlag ? 2.0 : undefined,
+    safetyStock: Math.round(input.reorderPoint * 0.2),
+  };
+
+  state = { ...state, products: [newProduct, ...state.products] };
   emit();
 }
 
