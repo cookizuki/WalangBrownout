@@ -20,7 +20,7 @@ import { useOps } from "@/lib/ops-store";
 import { FIFOExceptionPopover } from "@/components/FIFOExceptionPopover";
 import { ReceivingEntryModal } from "@/components/ReceivingEntryModal";
 import { QuickActionMenu } from "@/components/QuickActionMenu";
-import wbLogoInfo from "@/assets/wb-logo.jpg.asset.json";
+import { SeasonalConfigPanel } from "@/components/SeasonalConfigPanel";
 import wbLogo from "@/assets/WB LOGO.jpg";
 
 
@@ -755,8 +755,8 @@ function MyDayPage({ role, name, alerts }: { role: Role; name: string; alerts: A
 
 function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
 
-  
-  const rows = products
+  const { products: liveProducts } = useOps();
+  const rows = liveProducts
     .map(p => {
       const qty = onHand(p.sku);
       const rop = p.seasonalFlag ? ropSeasonal(p) : ropStandard(p);
@@ -828,6 +828,10 @@ function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
             })}
           </ul>
         </Panel>
+      </div>
+      <div className="space-y-2">
+        <SectionLabel>Seasonal reorder settings — Inventory Manager responsibility</SectionLabel>
+        <SeasonalConfigPanel />
       </div>
     </div>
   );

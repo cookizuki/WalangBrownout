@@ -33,6 +33,7 @@ interface OpsState {
   receivingLines: ReceivingLine[];
   pickTasks: PickTask[];
   products: Product[];
+  seasonalWindows: Record<string, { startMonth: number; endMonth: number }>;
 }
 
 let state: OpsState = {
@@ -43,6 +44,9 @@ let state: OpsState = {
   receivingLines: seedReceivingLines.map(r => ({ ...r })),
   pickTasks: seedPickTasks.map(t => ({ ...t })),
   products: seedProducts.map(p => ({ ...p })),
+  seasonalWindows: Object.fromEntries(
+    seedProducts.filter(p => p.seasonalFlag).map(p => [p.sku, { startMonth: 4, endMonth: 6 }]),
+  ),
 };
 
 const listeners = new Set<() => void>();
@@ -344,6 +348,24 @@ export function addProduct(input: {
   };
 
   state = { ...state, products: [newProduct, ...state.products] };
+  emit();
+}
+/**
+ * Inventory Staff sets the seasonal window (start/end month, 1-12) and the
+ * demand multiplier for a seasonal SKU. The multiplier feeds directly into
+ * ropSeasonal(): ROP = ADU × multiplier × LeadTime + SafetyStock.
+ */
+export function updateSeasonalConfig(sku: string, input: { startMonth: number; endMonth: number; multiplier: number }) {
+  state = {
+    ...state,
+    products: state.products.map(p =>
+      p.sku === sku ? { ...p, seasonalFactor: input.multiplier } : p,
+    ),
+    seasonalWindows: {
+      ...state.seasonalWindows,
+      [sku]: { startMonth: input.startMonth, endMonth: input.endMonth },
+    },
+  };
   emit();
 }
 
