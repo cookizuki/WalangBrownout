@@ -12,7 +12,10 @@ import {
   receivingLines as seedReceivingLines,
   pickTasks as seedPickTasks,
   products as seedProducts,
-  suppliers,
+  suppliers as seedSuppliers,
+  locations as seedLocations,
+  type Supplier,
+  type WarehouseLocation,
   type ABC,
   type CycleCount,
   type InventoryBatch,
@@ -44,6 +47,8 @@ interface OpsState {
   products: Product[];
   auditLog: AuditEntry[];
   seasonalWindows: Record<string, { startMonth: number; endMonth: number }>;
+  suppliers: Supplier[];
+  locations: WarehouseLocation[];
 }
 
 let state: OpsState = {
@@ -58,6 +63,8 @@ let state: OpsState = {
   seasonalWindows: Object.fromEntries(
     seedProducts.filter(p => p.seasonalFlag).map(p => [p.sku, { startMonth: 4, endMonth: 6 }]),
   ),
+  suppliers: seedSuppliers.map(s => ({ ...s })),
+  locations: seedLocations.map(l => ({ ...l })),
 };
 
 const listeners = new Set<() => void>();
@@ -177,7 +184,7 @@ export function reportAdjustment(input: {
 export function draftPO(input: { sku: string; quantity: number; requestedBy: string }) {
   const p = state.products.find(pp => pp.sku === input.sku);
   if (!p) return;
-  const supplier = suppliers.find(s => s.id === p.supplierId);
+  const supplier = state.suppliers.find(s => s.id === p.supplierId);
 
   const po: PendingPO = {
     id: nextPOId(),
@@ -356,7 +363,7 @@ export function addProduct(input: {
     sku: input.sku,
     name: input.name,
     categoryId: 1,
-    supplierId: suppliers[0]?.id ?? 1,
+    supplierId: state.suppliers[0]?.id ?? 1,
     unitCost: input.unitCost,
     reorderPoint: input.reorderPoint,
     reorderQuantity: input.reorderPoint * 2,
@@ -371,6 +378,33 @@ export function addProduct(input: {
 
   state = { ...state, products: [newProduct, ...state.products] };
   logAudit(actor.userId, actor.userName, "Added product", `SKU: ${input.sku}`);
+  emit();
+}
+
+let supplierSeq = 100;
+/** Administrator adds a new supplier to the directory. */
+export function addSupplier(input: { name: string; contact: string; email: string; phone: string }) {
+  const newSupplier: Supplier = {
+    id: supplierSeq++,
+    name: input.name,
+    contact: input.contact,
+  };
+  state = { ...state, suppliers: [newSupplier, ...state.suppliers] };
+  emit();
+}
+
+let locationSeq = 100;
+/** Administrator adds a new warehouse storage location. */
+export function addLocation(input: { zone: string; aisle: string; description: string }) {
+  const code = `${input.zone}-${input.aisle.padStart(2, "0")}`;
+  if (state.locations.some(l => l.code === code)) return;
+
+  const newLocation: WarehouseLocation = {
+    id: locationSeq++,
+    code,
+    description: input.description || `Zone ${input.zone} · Aisle ${input.aisle}`,
+  };
+  state = { ...state, locations: [newLocation, ...state.locations] };
   emit();
 }
 /**

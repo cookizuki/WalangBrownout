@@ -7,6 +7,9 @@ import { addProduct } from "@/lib/ops-store";
 import { ProductFormModal } from "@/components/ProductFormModal";
 import { createAccount, DEMO_PASSWORD, listAccounts, ROLES, roleLabel, useSession, type Account, type Role } from "@/lib/auth";
 import { AuditLogPanel } from "@/components/AuditLogPanel";
+import { addSupplier, addLocation } from "@/lib/ops-store";
+import { SupplierDirectoryForm } from "@/components/SupplierDirectoryForm";
+import { LocationSetupWidget } from "@/components/LocationSetupWidget";
 import { toast } from "sonner";
 
 const initials = (name: string) =>
@@ -19,6 +22,8 @@ export function AdminPage() {
   const { pendingPOs: pending } = useOps();
   const [leaving, setLeaving] = useState<string[]>([]);
   const [showProductForm, setShowProductForm] = useState(false);
+  const [showSupplierForm, setShowSupplierForm] = useState(false);
+  const { suppliers, locations } = useOps();
 
   useEffect(() => setAccounts(listAccounts()), []);
 
@@ -199,6 +204,68 @@ export function AdminPage() {
           </button>
         </div>
       </section>
+      {/* Section 3b — suppliers & locations */}
+      <section className="space-y-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Section 3b — supplier directory & warehouse locations (System Administrator responsibility)
+        </p>
+        <div className="grid gap-5 lg:grid-cols-2">
+          <div className="card-surface">
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <div>
+                <h2 className="text-sm font-semibold">Suppliers</h2>
+                <p className="text-xs text-muted-foreground">{suppliers.length} on file</p>
+              </div>
+              <button
+                onClick={() => setShowSupplierForm(true)}
+                className="rounded-md bg-foreground px-4 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
+              >
+                + Add Supplier
+              </button>
+            </div>
+            <ul className="divide-y divide-dashed divide-border">
+              {suppliers.map(s => (
+                <li key={s.id} className="px-5 py-3 text-sm">
+                  <div className="font-medium">{s.name}</div>
+                  <div className="text-xs text-muted-foreground">{s.contact}</div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="card-surface p-5">
+            <div className="mb-3">
+              <h2 className="text-sm font-semibold">Warehouse Locations</h2>
+              <p className="text-xs text-muted-foreground">{locations.length} zones mapped</p>
+            </div>
+            <LocationSetupWidget
+              onSave={v => {
+                addLocation(v);
+                toast.success("Location added", { description: `${v.zone}-${v.aisle}` });
+              }}
+            />
+            <ul className="mt-4 divide-y divide-dashed divide-border">
+              {locations.map(l => (
+                <li key={l.id} className="flex items-center justify-between py-2 text-sm">
+                  <span className="font-mono text-xs font-semibold">{l.code}</span>
+                  <span className="text-xs text-muted-foreground">{l.description}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {showSupplierForm && (
+        <SupplierDirectoryForm
+          onClose={() => setShowSupplierForm(false)}
+          onSave={v => {
+            addSupplier(v);
+            toast.success("Supplier added", { description: v.name });
+            setShowSupplierForm(false);
+          }}
+        />
+      )}
       {/* Section 4 — audit trail */}
       <section className="space-y-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
