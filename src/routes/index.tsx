@@ -21,6 +21,7 @@ import { FIFOExceptionPopover } from "@/components/FIFOExceptionPopover";
 import { ReceivingEntryModal } from "@/components/ReceivingEntryModal";
 import { QuickActionMenu } from "@/components/QuickActionMenu";
 import { SeasonalConfigPanel } from "@/components/SeasonalConfigPanel";
+import { ReportsPage } from "@/components/ReportsPage";
 import wbLogo from "@/assets/WB LOGO.jpg";
 
 
@@ -42,7 +43,7 @@ export const Route = createFileRoute("/")({
 type Tab =
   | "overview" | "inventory" | "batches" | "alerts"
   | "myday" | "counts" | "txlog" | "reorder"
-  | "picks" | "receiving" | "admin";
+  | "picks" | "receiving" | "admin" | "reports";
 
 const PAGE_META: Record<Tab, { title: string; subtitle: string }> = {
   overview: { title: "Overview", subtitle: "Real-time status" },
@@ -56,10 +57,11 @@ const PAGE_META: Record<Tab, { title: string; subtitle: string }> = {
   picks: { title: "Pick Tasks", subtitle: "FIFO-enforced picking queue" },
   receiving: { title: "Receiving", subtitle: "Inbound POs, putaway and location" },
   admin: { title: "Admin", subtitle: "User management and purchase order approvals" },
+  reports: { title: "Reports", subtitle: "Shrinkage and sales velocity history" },
 };
 
 const ROLE_NAV: Record<Role, Tab[]> = {
-  ADMIN: ["overview", "inventory", "batches", "alerts", "admin"],
+  ADMIN: ["overview", "inventory", "batches", "alerts", "reports", "admin"],
   INVENTORY_STAFF: ["myday", "inventory", "counts", "txlog", "reorder", "batches", "alerts"],
   WAREHOUSE_STAFF: ["myday", "counts", "picks", "receiving", "batches", "alerts"],
 };
@@ -207,6 +209,7 @@ function Dashboard() {
           {tab === "picks" && <PickTasksPage />}
           {tab === "receiving" && <ReceivingPage />}
           {tab === "admin" && account.role === "ADMIN" && <AdminPage />}
+          {tab === "reports" && account.role === "ADMIN" && <ReportsPage />}
         </main>
           {(account.role === "WAREHOUSE_STAFF" || account.role === "ADMIN") && <QuickActionMenu />}
       </div>
