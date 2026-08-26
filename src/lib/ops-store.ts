@@ -23,6 +23,15 @@ import {
   type TxLog,
 } from "./inventory-data";
 
+export interface AuditEntry {
+  id: string;
+  userId: number;
+  userName: string;
+  action: string;
+  target: string;
+  timestamp: string;
+}
+
 export type AdjustmentReason = "DAMAGE" | "LOSS" | "CORRECTION";
 
 interface OpsState {
@@ -33,6 +42,7 @@ interface OpsState {
   receivingLines: ReceivingLine[];
   pickTasks: PickTask[];
   products: Product[];
+  auditLog: AuditEntry[];
   seasonalWindows: Record<string, { startMonth: number; endMonth: number }>;
 }
 
@@ -44,6 +54,7 @@ let state: OpsState = {
   receivingLines: seedReceivingLines.map(r => ({ ...r })),
   pickTasks: seedPickTasks.map(t => ({ ...t })),
   products: seedProducts.map(p => ({ ...p })),
+  auditLog: [],
   seasonalWindows: Object.fromEntries(
     seedProducts.filter(p => p.seasonalFlag).map(p => [p.sku, { startMonth: 4, endMonth: 6 }]),
   ),
@@ -71,6 +82,17 @@ const nextPOId = () => `PO-20${poSeq++}`;
 
 let batchSeq = 1200;
 const nextBatchId = () => `B-${batchSeq++}`;
+
+let auditSeq = 1;
+function logAudit(userId: number, userName: string, action: string, target: string) {
+  state = {
+    ...state,
+    auditLog: [
+      { id: `AL-${String(auditSeq++).padStart(4, "0")}`, userId, userName, action, target, timestamp: new Date().toISOString() },
+      ...state.auditLog,
+    ],
+  };
+}
 
 /** Warehouse staff submits a physical count; variance logs an ADJUSTMENT tx. */
 export function submitCount(countId: string, countedQty: number, userId = 4) {
@@ -327,7 +349,7 @@ export function reportFifoIssue(taskId: string, reason: "DAMAGED" | "MISSING", u
 export function addProduct(input: {
   sku: string; name: string; unitCost: number; reorderPoint: number;
   leadTimeDays: number; abc: ABC; seasonalFlag: boolean;
-}) {
+}, actor: { userId: number; userName: string }) {
   if (state.products.some(p => p.sku === input.sku)) return;
 
   const newProduct: Product = {
@@ -348,6 +370,7 @@ export function addProduct(input: {
   };
 
   state = { ...state, products: [newProduct, ...state.products] };
+  logAudit(actor.userId, actor.userName, "Added product", `SKU: ${input.sku}`);
   emit();
 }
 /**
@@ -355,7 +378,11 @@ export function addProduct(input: {
  * demand multiplier for a seasonal SKU. The multiplier feeds directly into
  * ropSeasonal(): ROP = ADU × multiplier × LeadTime + SafetyStock.
  */
-export function updateSeasonalConfig(sku: string, input: { startMonth: number; endMonth: number; multiplier: number }) {
+export function updateSeasonalConfig(
+  sku: string,
+  input: { startMonth: number; endMonth: number; multiplier: number },
+  actor: { userId: number; userName: string },
+) {
   state = {
     ...state,
     products: state.products.map(p =>
@@ -366,6 +393,7 @@ export function updateSeasonalConfig(sku: string, input: { startMonth: number; e
       [sku]: { startMonth: input.startMonth, endMonth: input.endMonth },
     },
   };
+  logAudit(actor.userId, actor.userName, "Updated seasonal multiplier", `SKU: ${sku} → ${input.multiplier}×`);
   emit();
 }
 

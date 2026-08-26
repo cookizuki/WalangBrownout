@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useOps, updateSeasonalConfig } from "@/lib/ops-store";
+import { useSession } from "@/lib/auth";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -10,6 +11,7 @@ export function SeasonalConfigPanel() {
   const { products, seasonalWindows } = useOps();
   const seasonal = products.filter(p => p.seasonalFlag);
   const [saved, setSaved] = useState<string | null>(null);
+  const { account } = useSession();
 
   return (
     <div className="card-surface overflow-hidden">
@@ -29,6 +31,8 @@ export function SeasonalConfigPanel() {
             window={seasonalWindows[p.sku] ?? { startMonth: 4, endMonth: 6 }}
             onSaved={() => { setSaved(p.sku); window.setTimeout(() => setSaved(s => (s === p.sku ? null : s)), 1500); }}
             justSaved={saved === p.sku}
+            actorId={account ? Number(account.id.replace(/\D/g, "")) || 1 : 1}
+            actorName={account?.name ?? "Unknown user"}
           />
         ))}
         {seasonal.length === 0 && (
@@ -43,11 +47,11 @@ export function SeasonalConfigPanel() {
 }
 
 function SeasonalRow({
-  sku, name, multiplier, window, onSaved, justSaved,
+  sku, name, multiplier, window, onSaved, justSaved, actorId, actorName,
 }: {
   sku: string; name: string; multiplier: number;
   window: { startMonth: number; endMonth: number };
-  onSaved: () => void; justSaved: boolean;
+  onSaved: () => void; justSaved: boolean; actorId: number; actorName: string;
 }) {
   const [start, setStart] = useState(window.startMonth);
   const [end, setEnd] = useState(window.endMonth);
@@ -56,7 +60,7 @@ function SeasonalRow({
   const save = () => {
     const m = Number(mult);
     if (!m || m <= 0) return;
-    updateSeasonalConfig(sku, { startMonth: start, endMonth: end, multiplier: m });
+    updateSeasonalConfig(sku, { startMonth: start, endMonth: end, multiplier: m }, { userId: actorId, userName: actorName });
     onSaved();
   };
 

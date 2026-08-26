@@ -5,12 +5,14 @@ import { useOps, resolvePendingPO } from "@/lib/ops-store";
 import { money } from "@/lib/inventory-data";
 import { addProduct } from "@/lib/ops-store";
 import { ProductFormModal } from "@/components/ProductFormModal";
-import { createAccount, DEMO_PASSWORD, listAccounts, ROLES, roleLabel, type Account, type Role } from "@/lib/auth";
+import { createAccount, DEMO_PASSWORD, listAccounts, ROLES, roleLabel, useSession, type Account, type Role } from "@/lib/auth";
+import { AuditLogPanel } from "@/components/AuditLogPanel";
 
 const initials = (name: string) =>
   name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
 
 export function AdminPage() {
+  const { account } = useSession();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [showForm, setShowForm] = useState(false);
   const { pendingPOs: pending } = useOps();
@@ -195,11 +197,21 @@ export function AdminPage() {
           </button>
         </div>
       </section>
+      {/* Section 4 — audit trail */}
+      <section className="space-y-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Section 4 — system audit trail (System Administrator responsibility)
+        </p>
+        <AuditLogPanel />
+      </section>
 
       {showProductForm && (
         <ProductFormModal
           onClose={() => setShowProductForm(false)}
-          onSave={v => { addProduct(v); setShowProductForm(false); }}
+          onSave={v => {
+            if (account) addProduct(v, { userId: Number(account.id.replace(/\D/g, "")) || 1, userName: account.name });
+            setShowProductForm(false);
+          }}
         />
       )}
     </div>
