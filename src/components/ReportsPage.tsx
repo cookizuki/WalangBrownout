@@ -1,21 +1,40 @@
 import { useMemo } from "react";
+import {
+  Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer,
+  Tooltip, XAxis, YAxis,
+} from "recharts";
 import { useOps } from "@/lib/ops-store";
 import { money } from "@/lib/inventory-data";
+import { useChartColors } from "@/hooks/use-chart-colors";
 
 const MONTH_LABELS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
+function ChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="card-surface px-3 py-2 text-xs shadow-lg">
+      <p className="font-semibold">{label}</p>
+      {payload.map((p: any) => (
+        <p key={p.dataKey} className="text-muted-foreground">
+          {p.name}: <span className="font-mono text-foreground">{p.value}</span>
+        </p>
+      ))}
+    </div>
+  );
+}
+
 export function ReportsPage() {
   const { transactions, products } = useOps();
+  const c = useChartColors();
 
   const productLookup = useMemo(
     () => Object.fromEntries(products.map(p => [p.sku, p])),
     [products],
   );
 
-  // --- End-of-month shrinkage: ADJUSTMENT (negative) + WRITE_OFF transactions ---
   const shrinkageByMonth = useMemo(() => {
     const buckets: Record<string, { units: number; cost: number }> = {};
     for (const t of transactions) {
@@ -41,7 +60,6 @@ export function ReportsPage() {
 
   const totalShrinkageCost = shrinkageByMonth.reduce((s, m) => s + m.cost, 0);
 
-  // --- Sales velocity: SALE transactions grouped by SKU ---
   const velocityBySku = useMemo(() => {
     const buckets: Record<string, number> = {};
     for (const t of transactions) {
@@ -49,11 +67,15 @@ export function ReportsPage() {
       buckets[t.sku] = (buckets[t.sku] ?? 0) + Math.abs(t.quantityDelta);
     }
     return Object.entries(buckets)
-      .map(([sku, units]) => ({ sku, units, name: productLookup[sku]?.name ?? sku, abc: productLookup[sku]?.abc }))
+      .map(([sku, units]) => ({
+        sku, units,
+        name: productLookup[sku]?.name ?? sku,
+        abc: productLookup[sku]?.abc ?? "C",
+      }))
       .sort((a, b) => b.units - a.units);
   }, [transactions, productLookup]);
 
-  const maxVelocity = Math.max(1, ...velocityBySku.map(v => v.units));
+  const abcColor = { A: c["--abc-a"], B: c["--abc-b"], C: c["--abc-c"] } as const;
 
   return (
     <div className="space-y-6">
@@ -68,28 +90,20 @@ export function ReportsPage() {
               {money(totalShrinkageCost)} total
             </span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[500px] text-sm">
-              <thead className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
-                <tr className="border-b border-border">
-                  <th className="px-5 py-3 font-semibold">Month</th>
-                  <th className="px-5 py-3 font-semibold">Units Lost</th>
-                  <th className="px-5 py-3 font-semibold">Estimated Cost</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-dashed divide-border">
-                {shrinkageByMonth.map(m => (
-                  <tr key={m.label} className="hover:bg-muted/40">
-                    <td className="px-5 py-3 font-medium">{m.label}</td>
-                    <td className="px-5 py-3 font-mono text-danger">{m.units}</td>
-                    <td className="px-5 py-3 font-mono text-xs">{money(m.cost)}</td>
-                  </tr>
-                ))}
-                {shrinkageByMonth.length === 0 && (
-                  <tr><td colSpan={3} className="px-5 py-8 text-center text-muted-foreground">No shrinkage recorded yet.</td></tr>
-                )}
-              </tbody>
-            </table>
+          <div className="px-3 py-4">
+            {shrinkageByMonth.length === 0 ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">No shrinkage recorded yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={shrinkageByMonth} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={c["--border"]} vertical={false} />
+                  <XAxis dataKey="label" tick={{ fill: c["--muted-foreground"], fontSize: 11 }} axisLine={{ stroke: c["--border"] }} tickLine={false} />
+                  <YAxis tick={{ fill: c["--muted-foreground"], fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: c["--border"], opacity: 0.3 }} />
+                  <Bar dataKey="cost" name="Cost (₱)" fill={c["--danger"]} radius={[6, 6, 0, 0]} maxBarSize={56} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
           <p className="border-t border-border px-5 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">
             Includes damage, loss, and write-off transactions — not correction adjustments
@@ -105,29 +119,42 @@ export function ReportsPage() {
           <div className="border-b border-border px-5 py-4">
             <h2 className="text-sm font-semibold">Historical Sales Velocity</h2>
           </div>
-          <div className="space-y-3 px-5 py-4">
-            {velocityBySku.map(v => (
-              <div key={v.sku} className="flex items-center gap-3">
-                <span className="w-40 shrink-0 truncate text-xs font-medium">{v.name}</span>
-                <span className="inline-grid h-5 w-5 shrink-0 place-items-center rounded border border-border text-[10px] font-semibold">
-                  {v.abc}
-                </span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-foreground transition-[width] duration-500 ease-out"
-                    style={{ width: `${(v.units / maxVelocity) * 100}%` }}
+          <div className="px-3 py-4">
+            {velocityBySku.length === 0 ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">No sales recorded yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={Math.max(180, velocityBySku.length * 46)}>
+                <BarChart
+                  data={velocityBySku}
+                  layout="vertical"
+                  margin={{ top: 4, right: 24, left: 8, bottom: 4 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke={c["--border"]} horizontal={false} />
+                  <XAxis type="number" tick={{ fill: c["--muted-foreground"], fontSize: 11 }} axisLine={{ stroke: c["--border"] }} tickLine={false} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    tick={{ fill: c["--foreground"], fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={150}
                   />
-                </div>
-                <span className="w-16 shrink-0 text-right font-mono text-xs text-muted-foreground">{v.units} sold</span>
-              </div>
-            ))}
-            {velocityBySku.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted-foreground">No sales recorded yet.</p>
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: c["--border"], opacity: 0.3 }} />
+                  <Bar dataKey="units" name="Units sold" radius={[0, 6, 6, 0]} maxBarSize={22}>
+                    {velocityBySku.map(v => (
+                      <Cell key={v.sku} fill={abcColor[v.abc]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             )}
           </div>
-          <p className="border-t border-border px-5 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">
-            Consistently high-volume Class B/C items may be candidates for reclassification to Class A
-          </p>
+          <div className="flex items-center gap-4 border-t border-border px-5 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: c["--abc-a"] }} /> Class A</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: c["--abc-b"] }} /> Class B</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: c["--abc-c"] }} /> Class C</span>
+            <span className="ml-auto normal-case tracking-normal">Consistently high-volume B/C items may be candidates for reclassification to A</span>
+          </div>
         </div>
       </div>
     </div>
