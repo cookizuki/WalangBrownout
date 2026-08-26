@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { reportFifoIssue } from "@/lib/ops-store";
+import { toast } from "sonner";
 
 export function FIFOExceptionPopover({ taskId }: { taskId: string }) {
   const [open, setOpen] = useState(false);
@@ -13,6 +14,7 @@ export function FIFOExceptionPopover({ taskId }: { taskId: string }) {
     reportFifoIssue(taskId, reason);
     setOpen(false);
     setDone(true);
+    toast.warning("Batch flagged and unlocked", { description: `${taskId} reassigned to the next available FIFO lot` });
   };
 
   return (

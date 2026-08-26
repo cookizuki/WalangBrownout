@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useOps, logMovement } from "@/lib/ops-store";
 import { locations, products } from "@/lib/inventory-data";
+import { toast } from "sonner";
 
 type MoveType = "RETURN" | "TRANSFER" | "WRITE_OFF";
 const OPTIONS: { key: MoveType; label: string }[] = [
@@ -28,6 +29,7 @@ export function QuickActionMenu() {
       quantity: Number(qty),
       toLocationId: active === "TRANSFER" ? Number(toLoc) : undefined,
     });
+    toast.success(`${OPTIONS.find(o => o.key === active)?.label} logged`, { description: `Batch ${batchId} · ${qty} units` });
     reset();
   };
 

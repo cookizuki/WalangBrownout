@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { receiveDelivery } from "@/lib/ops-store";
 import type { ReceivingLine } from "@/lib/inventory-data";
+import { toast } from "sonner";
 
 export function ReceivingEntryModal({
   line, productName, onClose,
@@ -27,6 +28,7 @@ export function ReceivingEntryModal({
     if (!q || q <= 0) return setError("Enter a valid quantity received.");
     if (!expiry) return setError("Expiration date is required to create the batch.");
     receiveDelivery({ lineId: line.id, quantityReceived: q, expirationDate: expiry });
+    toast.success("Delivery received", { description: `New batch created for ${productName} — ${q} units` });
     onClose();
   };
 

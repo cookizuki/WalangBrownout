@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { draftPO } from "@/lib/ops-store";
+import { toast } from "sonner";
 
 /**
  * Row-level action on Reorder Review. Turns a suggested reorder into a real
@@ -25,6 +26,7 @@ export function DraftPOAction({
       onClick={() => {
         draftPO({ sku, quantity, requestedBy });
         setDrafted(true);
+        toast.success("Purchase order drafted", { description: `Sent to Admin for approval — ${sku}, ${quantity} units` });
       }}
       className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-muted"
     >

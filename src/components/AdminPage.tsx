@@ -7,6 +7,7 @@ import { addProduct } from "@/lib/ops-store";
 import { ProductFormModal } from "@/components/ProductFormModal";
 import { createAccount, DEMO_PASSWORD, listAccounts, ROLES, roleLabel, useSession, type Account, type Role } from "@/lib/auth";
 import { AuditLogPanel } from "@/components/AuditLogPanel";
+import { toast } from "sonner";
 
 const initials = (name: string) =>
   name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
@@ -21,9 +22,10 @@ export function AdminPage() {
 
   useEffect(() => setAccounts(listAccounts()), []);
 
-  const resolvePO = (id: string) => {
+  const resolvePO = (id: string, action: "Approved" | "Rejected") => {
     if (leaving.includes(id)) return;
     setLeaving(l => [...l, id]);
+    toast[action === "Approved" ? "success" : "error"](`Purchase order ${action.toLowerCase()}`, { description: id });
     window.setTimeout(() => {
       resolvePendingPO(id);
       setLeaving(l => l.filter(x => x !== id));
@@ -150,14 +152,14 @@ export function AdminPage() {
                     </div>
                     <div className="flex shrink-0 gap-2">
                       <button
-                        onClick={() => resolvePO(po.id)}
+                        onClick={() => resolvePO(po.id, "Approved")}
                         disabled={leaving.includes(po.id)}
                         className="rounded-md bg-foreground px-4 py-1.5 text-xs font-semibold text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {leaving.includes(po.id) ? "Approved" : "Approve"}
                       </button>
                       <button
-                        onClick={() => resolvePO(po.id)}
+                        onClick={() => resolvePO(po.id, "Rejected")}
                         disabled={leaving.includes(po.id)}
                         className="rounded-md border border-border px-4 py-1.5 text-xs font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                       >
@@ -210,6 +212,7 @@ export function AdminPage() {
           onClose={() => setShowProductForm(false)}
           onSave={v => {
             if (account) addProduct(v, { userId: Number(account.id.replace(/\D/g, "")) || 1, userName: account.name });
+            toast.success("Product added", { description: `${v.sku} — ${v.name}` });
             setShowProductForm(false);
           }}
         />
