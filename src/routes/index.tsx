@@ -22,6 +22,8 @@ import { ReceivingEntryModal } from "@/components/ReceivingEntryModal";
 import { QuickActionMenu } from "@/components/QuickActionMenu";
 import { SeasonalConfigPanel } from "@/components/SeasonalConfigPanel";
 import { ReportsPage } from "@/components/ReportsPage";
+import { ScanInput } from "@/components/ScanInput";
+import { toast } from "sonner";
 import wbLogo from "@/assets/WB LOGO.jpg";
 
 
@@ -845,12 +847,27 @@ function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
 function PickTasksPage() {
   const { pickTasks } = useOps();
   const [done, setDone] = useState<string[]>([]);
+  const [highlighted, setHighlighted] = useState<string | null>(null);
   const order = { HIGH: 0, NORMAL: 1, LOW: 2 } as const;
   const rows = [...pickTasks].sort((a, b) => order[a.priority] - order[b.priority]);
+
+  const handleScan = (code: string) => {
+    const match = rows.find(
+      t => t.sku.toLowerCase() === code.toLowerCase() || t.batchId.toLowerCase() === code.toLowerCase(),
+    );
+    if (match) {
+      setHighlighted(match.id);
+      toast.success("Match found", { description: `${match.id} · ${products.find(p => p.sku === match.sku)?.name}` });
+      window.setTimeout(() => setHighlighted(null), 2200);
+    } else {
+      toast.error("No matching task", { description: `"${code}" doesn't match any SKU or Batch ID in this queue` });
+    }
+  };
 
   return (
     <div className="space-y-2">
       <SectionLabel>Pick queue — batch is pre-assigned by FIFO, oldest lot first</SectionLabel>
+      <ScanInput onScan={handleScan} />
       <Panel
         title="Pick Tasks"
         right={
@@ -874,7 +891,7 @@ function PickTasksPage() {
                 const loc = locations.find(l => l.id === t.locationId);
                 const status = done.includes(t.id) ? "DONE" : t.status;
                 return (
-                  <tr key={t.id} className="hover:bg-muted/40">
+                  <tr key={t.id} className={`transition-colors duration-500 hover:bg-muted/40 ${highlighted === t.id ? "bg-success/10" : ""}`}>
                     <Td className="font-mono text-xs">{t.id}</Td>
                     <Td className="font-medium">{p?.name}</Td>
                     <Td className="font-mono text-xs">
@@ -919,11 +936,26 @@ function PickTasksPage() {
 function ReceivingPage() {
   const { receivingLines, batches } = useOps();
   const [receivingLine, setReceivingLine] = useState<string | null>(null);
+  const [highlighted, setHighlighted] = useState<string | null>(null);
+
+  const handleScan = (code: string) => {
+    const match = receivingLines.find(
+      r => r.sku.toLowerCase() === code.toLowerCase() || r.poNumber.toLowerCase() === code.toLowerCase(),
+    );
+    if (match) {
+      setHighlighted(match.id);
+      toast.success("Match found", { description: `${match.id} · ${match.poNumber}` });
+      window.setTimeout(() => setHighlighted(null), 2200);
+    } else {
+      toast.error("No matching line", { description: `"${code}" doesn't match any SKU or PO number in this queue` });
+    }
+  };
 
   return (
     <div className="space-y-5">
       <div className="space-y-2">
         <SectionLabel>Inbound panel — one row per PO line</SectionLabel>
+        <ScanInput onScan={handleScan} placeholder="Scan or type a SKU / PO number, then press Enter" />
         <Panel title="Receiving & Putaway" footer="Receiving creates a new inventory batch stamped with date received and its warehouse location">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[880px] text-sm">
@@ -940,7 +972,7 @@ function ReceivingPage() {
                   const loc = locations.find(l => l.id === r.locationId);
                   const canReceive = r.status !== "PUT_AWAY";
                   return (
-                    <tr key={r.id} className="hover:bg-muted/40">
+                    <tr key={r.id} className={`transition-colors duration-500 hover:bg-muted/40 ${highlighted === r.id ? "bg-success/10" : ""}`}>
                       <Td className="font-mono text-xs">{r.id}</Td>
                       <Td className="font-mono text-xs">{r.poNumber}</Td>
                       <Td className="font-medium">{p?.name}</Td>
