@@ -219,7 +219,7 @@ export function receiveDelivery(input: {
   userId?: number;
 }) {
   const line = state.receivingLines.find(r => r.id === input.lineId);
-  if (!line || !input.quantityReceived) return;
+  if (!line || !input.quantityReceived) return null;
 
   const newBatch: InventoryBatch = {
     id: nextBatchId(),
@@ -254,6 +254,7 @@ export function receiveDelivery(input: {
     ],
   };
   emit();
+  return newBatch;
 }
 
 /** Ad-hoc movement: Return (+qty), Write-Off (-qty), or Transfer (location change, qty unchanged). */

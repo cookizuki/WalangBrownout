@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { receiveDelivery } from "@/lib/ops-store";
 import type { ReceivingLine } from "@/lib/inventory-data";
 import { toast } from "sonner";
+import { printBatchLabel } from "@/components/BatchLabel";
 
 export function ReceivingEntryModal({
   line, productName, onClose,
@@ -27,8 +28,21 @@ export function ReceivingEntryModal({
     const q = Number(qty);
     if (!q || q <= 0) return setError("Enter a valid quantity received.");
     if (!expiry) return setError("Expiration date is required to create the batch.");
-    receiveDelivery({ lineId: line.id, quantityReceived: q, expirationDate: expiry });
-    toast.success("Delivery received", { description: `New batch created for ${productName} — ${q} units` });
+    const newBatch = receiveDelivery({ lineId: line.id, quantityReceived: q, expirationDate: expiry });
+    toast.success("Delivery received", {
+      description: `New batch created for ${productName} — ${q} units`,
+      action: newBatch ? {
+        label: "Print label",
+        onClick: () => printBatchLabel({
+          sku: newBatch.sku,
+          productName,
+          batchId: newBatch.id,
+          quantity: newBatch.quantityReceived,
+          dateReceived: newBatch.dateReceived,
+          expirationDate: newBatch.expirationDate,
+        }),
+      } : undefined,
+    });
     onClose();
   };
 
