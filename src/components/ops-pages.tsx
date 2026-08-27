@@ -41,7 +41,7 @@ export function StockCountsPage({ mode }: { mode: "entry" | "review" }) {
             <thead className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
               <tr className="border-b border-border">
                 <Th>Count ID</Th><Th>Product</Th><Th>Location</Th><Th>System</Th>
-                <Th>Counted</Th><Th>Variance</Th><Th>Status</Th><Th>{" "}</Th>
+                <Th>Counted</Th><Th>Variance</Th><Th>Status</Th><Th>Actions</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-dashed divide-border">
