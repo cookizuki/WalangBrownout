@@ -487,15 +487,24 @@ function InventoryPage({ query, canExport = false }: { query: string; canExport?
       </div>
       <div className="card-surface overflow-hidden">
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-5 py-4">
+
           {(["All", "Class A", "Class B", "Class C", "FIFO-critical"] as Pill[]).map(v => (
             <button
               key={v}
               onClick={() => setPill(v)}
               className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
-                pill === v ? "border-foreground bg-foreground text-background" : "border-border text-muted-foreground hover:text-foreground"
+                pill === v
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border text-muted-foreground hover:text-foreground"
               }`}
             >
-              {v}
+              {v === "Class A"
+                ? "Class A (Top Value)"
+                : v === "Class B"
+                ? "Class B (Regular Value)"
+                : v === "Class C"
+                ? "Class C (Low Value)"
+                : v}
             </button>
           ))}
         </div>
