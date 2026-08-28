@@ -24,6 +24,7 @@ import { SeasonalConfigPanel } from "@/components/SeasonalConfigPanel";
 import { ReportsPage } from "@/components/ReportsPage";
 import { ScanInput } from "@/components/ScanInput";
 import { toast } from "sonner";
+import { CommandPalette } from "@/components/CommandPalette";
 import wbLogo from "@/assets/WB LOGO.jpg";
 
 
@@ -183,6 +184,9 @@ function Dashboard() {
             <p className="truncate text-xs text-muted-foreground">{meta.subtitle}</p>
           </div>
           <LiveClock />
+          <span className="hidden shrink-0 items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[10px] font-medium text-muted-foreground sm:flex">
+            <kbd className="font-sans">ctrl + K</kbd> to search
+          </span>
           {showSearch && (
             <input
               value={query}
@@ -213,7 +217,8 @@ function Dashboard() {
           {tab === "admin" && account.role === "ADMIN" && <AdminPage />}
           {tab === "reports" && account.role === "ADMIN" && <ReportsPage />}
         </main>
-          {(account.role === "WAREHOUSE_STAFF" || account.role === "ADMIN") && <QuickActionMenu />}
+        {(account.role === "WAREHOUSE_STAFF" || account.role === "ADMIN") && <QuickActionMenu />}
+        <CommandPalette onNavigate={t => setTab(t as Tab)} />
       </div>
     </div>
   );
