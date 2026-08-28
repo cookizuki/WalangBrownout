@@ -805,8 +805,23 @@ function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
                     </Td>
                     <Td className="font-mono">{p.reorderQuantity}</Td>
                     <Td className="font-mono text-xs">{money(p.reorderQuantity * p.unitCost)}</Td>
-                    <Td>
-                      <DraftPOAction sku={p.sku} quantity={p.reorderQuantity} requestedBy={requestedBy} />
+                                        <Td>
+                      <DraftPOAction
+                        sku={p.sku}
+                        productName={p.name}
+                        quantity={p.reorderQuantity}
+                        requestedBy={requestedBy}
+                        unitCost={p.unitCost}
+                        onHand={qty}
+                        rop={rop}
+                        formulaLabel={
+                          p.seasonalFlag
+                            ? `${p.avgDailyUsage} × ${p.seasonalFactor} × ${p.leadTimeDays} + ${p.safetyStock} (seasonal)`
+                            : `${p.avgDailyUsage} × ${p.leadTimeDays} + ${p.safetyStock} (standard)`
+                        }
+                        supplierName={suppliers.find(s => s.id === p.supplierId)?.name ?? "Unknown supplier"}
+                        supplierContact={suppliers.find(s => s.id === p.supplierId)?.contact ?? "—"}
+                      />
                     </Td>
                   </tr>
                 ))}

@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { draftPO } from "@/lib/ops-store";
 import { toast } from "sonner";
+import { draftPO } from "@/lib/ops-store";
+import { PODraftPreviewModal, type PODraftPreviewData } from "@/components/PODraftPreviewModal";
 
-/**
- * Row-level action on Reorder Review. Turns a suggested reorder into a real
- * pending PO that appears in the Admin approval queue immediately.
- */
 export function DraftPOAction({
-  sku, quantity, requestedBy,
-}: { sku: string; quantity: number; requestedBy: string }) {
+  sku, productName, quantity, requestedBy, unitCost, onHand, rop, formulaLabel, supplierName, supplierContact,
+}: {
+  sku: string; productName: string; quantity: number; requestedBy: string;
+  unitCost: number; onHand: number; rop: number; formulaLabel: string;
+  supplierName: string; supplierContact: string;
+}) {
+  const [open, setOpen] = useState(false);
   const [drafted, setDrafted] = useState(false);
 
   if (drafted) {
@@ -20,17 +22,34 @@ export function DraftPOAction({
     );
   }
 
+  const previewData: PODraftPreviewData = {
+    sku, productName, quantity, requestedBy, unitCost, onHand, rop, formulaLabel, supplierName, supplierContact,
+  };
+
   return (
-    <button
-      type="button"
-      onClick={() => {
-        draftPO({ sku, quantity, requestedBy });
-        setDrafted(true);
-        toast.success("Purchase order drafted", { description: `Sent to Admin for approval — ${sku}, ${quantity} units` });
-      }}
-      className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-muted"
-    >
-      Draft PO
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-muted"
+      >
+        Draft PO
+      </button>
+
+      {open && (
+        <PODraftPreviewModal
+          data={previewData}
+          onCancel={() => setOpen(false)}
+          onConfirm={() => {
+            draftPO({ sku, quantity, requestedBy });
+            setOpen(false);
+            setDrafted(true);
+            toast.success("Purchase order drafted successfully.", {
+              description: `${sku} · ${quantity} units → sent to Admin for approval`,
+            });
+          }}
+        />
+      )}
+    </>
   );
 }
