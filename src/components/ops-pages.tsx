@@ -4,9 +4,10 @@ import { Fragment, useMemo, useState } from "react";
 import {
   locations, products, type TxType,
 } from "@/lib/inventory-data";
-import { fifoBatches, reportAdjustment, submitCount, useOps, type AdjustmentReason } from "@/lib/ops-store";
+import { fifoBatches, reportAdjustment, submitCount, useOps, type AdjustmentReason, requestRecount } from "@/lib/ops-store";
 import { AnimatedRow, Panel, SectionLabel, TaskPill, Td, Th, TimeAgo, daysLeft, titleCase } from "@/components/ui-bits";
 import { GlareHover } from "@/components/GlareHover";
+
 
 const productName = (sku: string) => products.find(p => p.sku === sku)?.name ?? sku;
 const locCode = (id: number) => locations.find(l => l.id === id)?.code ?? "—";
@@ -84,7 +85,7 @@ export function StockCountsPage({ mode }: { mode: "entry" | "review" }) {
                         {variance === null ? "—" : variance > 0 ? `+${variance}` : variance}
                       </Td>
                       <Td><TaskPill status={value !== null && c.status === "PENDING" ? "IN_PROGRESS" : c.status} /></Td>
-                      <Td>
+                                            <Td>
                         {mode === "entry" && c.countedQty === null && (
                           <button
                             disabled={!entered}
@@ -95,6 +96,14 @@ export function StockCountsPage({ mode }: { mode: "entry" | "review" }) {
                             className="rounded-md border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             Submit count
+                          </button>
+                        )}
+                        {mode === "entry" && c.status === "DONE" && (
+                          <button
+                            onClick={() => requestRecount(c.id)}
+                            className="rounded-md border border-dashed border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          >
+                            Request recount
                           </button>
                         )}
                         {investigable && (

@@ -140,6 +140,31 @@ export function submitCount(countId: string, countedQty: number, userId = 4) {
   emit();
 }
 
+let recountSeq = 1;
+/**
+ * Warehouse Staff requests a recount after a wrong entry. The original
+ * submitted count stays in the record permanently (audit trail); a fresh
+ * PENDING count is created for the same SKU/location so it can be
+ * re-entered correctly.
+ */
+export function requestRecount(originalCountId: string) {
+  const original = state.counts.find(c => c.id === originalCountId);
+  if (!original) return;
+
+  const newCount: CycleCount = {
+    id: `${original.id}-R${recountSeq++}`,
+    sku: original.sku,
+    locationId: original.locationId,
+    systemQty: original.systemQty,
+    countedQty: null,
+    dueDate: new Date().toISOString().slice(0, 10),
+    status: "PENDING",
+  };
+
+  state = { ...state, counts: [newCount, ...state.counts] };
+  emit();
+}
+
 /** Warehouse staff reports damage / loss / correction against a batch. */
 export function reportAdjustment(input: {
   batchId: string;
