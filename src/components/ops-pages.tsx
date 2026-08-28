@@ -7,6 +7,7 @@ import {
 import { fifoBatches, reportAdjustment, submitCount, useOps, type AdjustmentReason, requestRecount } from "@/lib/ops-store";
 import { AnimatedRow, Panel, SectionLabel, TaskPill, Td, Th, TimeAgo, daysLeft, titleCase } from "@/components/ui-bits";
 import { GlareHover } from "@/components/GlareHover";
+import { TxTypeBadge } from "@/lib/tx-type-styles";
 
 
 const productName = (sku: string) => products.find(p => p.sku === sku)?.name ?? sku;
@@ -209,11 +210,7 @@ export function TransactionLogPage() {
                   <Td className="font-mono text-xs">{t.id}</Td>
                   <Td className="font-medium">{productName(t.sku)}</Td>
                   <Td className="font-mono text-xs">{t.batchId ?? "—"}</Td>
-                  <Td>
-                    <span className="rounded-full border border-border px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">
-                      {titleCase(t.type)}
-                    </span>
-                  </Td>
+                  <Td><TxTypeBadge type={t.type} /></Td>
                   <Td className={`font-mono ${t.quantityDelta < 0 ? "text-danger" : "text-success"}`}>
                     {t.quantityDelta > 0 ? `+${t.quantityDelta}` : t.quantityDelta}
                   </Td>

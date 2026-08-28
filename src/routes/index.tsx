@@ -25,6 +25,7 @@ import { ReportsPage } from "@/components/ReportsPage";
 import { ScanInput } from "@/components/ScanInput";
 import { toast } from "sonner";
 import { CommandPalette } from "@/components/CommandPalette";
+import { TxTypeBadge } from "@/lib/tx-type-styles";
 import wbLogo from "@/assets/WB LOGO.jpg";
 
 
@@ -374,9 +375,9 @@ function OverviewPage({ query, alerts, onAck }: { query: string; alerts: Alert[]
                     className="flex items-center justify-between gap-3 px-5 py-3 text-sm transition-colors hover:bg-muted/40"
                   >
                     <div className="flex min-w-0 items-center gap-3">
-                      <span className="h-3 w-3 shrink-0 rounded-full border border-border" />
+                      <TxTypeBadge type={tx.type} />
                       <span className="truncate">
-                        {titleCase(tx.type)} — {p?.name}{" "}
+                        {p?.name}{" "}
                         <span className={tx.quantityDelta < 0 ? "text-danger" : "text-success"}>
                           {tx.quantityDelta > 0 ? "+" : ""}{tx.quantityDelta}
                         </span>{" "}
