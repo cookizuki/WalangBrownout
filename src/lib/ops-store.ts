@@ -463,3 +463,47 @@ export function fifoBatches(sku: string, all: InventoryBatch[]): InventoryBatch[
     .filter(b => b.sku === sku && b.quantityRemaining > 0)
     .sort((a, b) => a.dateReceived.localeCompare(b.dateReceived));
 }
+/**
+ * Suggests a seasonal multiplier for a SKU by comparing average daily sales
+ * inside its configured seasonal window against sales outside it — the same
+ * "based on last year's demand spike" idea from the case study, computed
+ * from real Transaction Log history instead of typed in from memory.
+ */
+export function suggestSeasonalMultiplier(sku: string): { suggested: number | null; sampleSize: number } {
+  const window = state.seasonalWindows[sku];
+  if (!window) return { suggested: null, sampleSize: 0 };
+
+  const sales = state.transactions.filter(t => t.sku === sku && t.type === "SALE");
+  if (sales.length < 3) return { suggested: null, sampleSize: sales.length };
+
+  let inWindowUnits = 0, inWindowDays = new Set<string>();
+  let outWindowUnits = 0, outWindowDays = new Set<string>();
+
+  for (const t of sales) {
+    const d = new Date(t.timestamp);
+    const month = d.getMonth() + 1;
+    const dayKey = t.timestamp.slice(0, 10);
+    const inWindow = window.startMonth <= window.endMonth
+      ? month >= window.startMonth && month <= window.endMonth
+      : month >= window.startMonth || month <= window.endMonth; // handles wrap-around windows, e.g. Nov–Feb
+
+    if (inWindow) {
+      inWindowUnits += Math.abs(t.quantityDelta);
+      inWindowDays.add(dayKey);
+    } else {
+      outWindowUnits += Math.abs(t.quantityDelta);
+      outWindowDays.add(dayKey);
+    }
+  }
+
+  if (inWindowDays.size === 0 || outWindowDays.size === 0) {
+    return { suggested: null, sampleSize: sales.length };
+  }
+
+  const inAvg = inWindowUnits / inWindowDays.size;
+  const outAvg = outWindowUnits / outWindowDays.size;
+  if (outAvg === 0) return { suggested: null, sampleSize: sales.length };
+
+  const ratio = inAvg / outAvg;
+  return { suggested: Math.round(ratio * 10) / 10, sampleSize: sales.length };
+}

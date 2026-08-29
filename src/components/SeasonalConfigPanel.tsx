@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useOps, updateSeasonalConfig } from "@/lib/ops-store";
+import { useOps, updateSeasonalConfig, suggestSeasonalMultiplier } from "@/lib/ops-store";
 import { useSession } from "@/lib/auth";
 
 const MONTHS = [
@@ -56,6 +56,7 @@ function SeasonalRow({
   const [start, setStart] = useState(window.startMonth);
   const [end, setEnd] = useState(window.endMonth);
   const [mult, setMult] = useState(String(multiplier));
+  const suggestion = suggestSeasonalMultiplier(sku);
 
   const save = () => {
     const m = Number(mult);
@@ -93,6 +94,19 @@ function SeasonalRow({
           onChange={e => setMult(e.target.value.replace(/[^\d.]/g, ""))}
           className="mt-1 w-20 rounded-md border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
         />
+        {suggestion.suggested !== null ? (
+          <button
+            type="button"
+            onClick={() => setMult(String(suggestion.suggested))}
+            className="mt-1 block text-[10px] font-medium text-info underline decoration-dotted underline-offset-2 hover:text-foreground"
+          >
+            Suggested: {suggestion.suggested}× (from history)
+          </button>
+        ) : (
+          <span className="mt-1 block text-[10px] text-muted-foreground">
+            {suggestion.sampleSize < 3 ? "Not enough sales history yet" : "Insufficient in/out-window data"}
+          </span>
+        )}
       </label>
 
       <button
