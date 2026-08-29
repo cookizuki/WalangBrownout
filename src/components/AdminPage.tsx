@@ -1,16 +1,16 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { AnimatedItem } from "@/components/AnimatedList";
 import { FadeContent } from "@/components/FadeContent";
-import { useOps, resolvePendingPO } from "@/lib/ops-store";
+import { addProduct, addSupplier, addLocation, useOps, resolvePendingPO, logAudit } from "@/lib/ops-store";
 import { money } from "@/lib/inventory-data";
-import { addProduct } from "@/lib/ops-store";
 import { ProductFormModal } from "@/components/ProductFormModal";
 import { createAccount, DEMO_PASSWORD, listAccounts, ROLES, roleLabel, useSession, type Account, type Role } from "@/lib/auth";
 import { AuditLogPanel } from "@/components/AuditLogPanel";
-import { addSupplier, addLocation } from "@/lib/ops-store";
 import { SupplierDirectoryForm } from "@/components/SupplierDirectoryForm";
 import { LocationSetupWidget } from "@/components/LocationSetupWidget";
 import { toast } from "sonner";
+import { EditUserModal } from "@/components/EditUserModal";
+
 
 const initials = (name: string) =>
   name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
@@ -24,6 +24,7 @@ export function AdminPage() {
   const [showProductForm, setShowProductForm] = useState(false);
   const [showSupplierForm, setShowSupplierForm] = useState(false);
   const { suppliers, locations } = useOps();
+  const [editingUser, setEditingUser] = useState<Account | null>(null);
 
   useEffect(() => setAccounts(listAccounts()), []);
 
@@ -69,6 +70,19 @@ export function AdminPage() {
             </FadeContent>
           )}
 
+      {editingUser && account && (
+        <EditUserModal
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSaved={updated => {
+            setAccounts(a => a.map(u => (u.id === updated.id ? updated : u)));
+            toast.success("User updated", { description: `${updated.name} — ${roleLabel(updated.role)}` });
+            logAudit(Number(account.id.replace(/\D/g, "")) || 1, account.name, "Updated user", `${updated.name} → ${roleLabel(updated.role)}`);
+            setEditingUser(null);
+          }}
+        />
+      )}
+
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="border-b border-border text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -104,7 +118,10 @@ export function AdminPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3">
-                      <button className="text-xs font-medium underline underline-offset-4 hover:text-foreground/70">
+                      <button
+                        onClick={() => setEditingUser(a)}
+                        className="text-xs font-medium underline underline-offset-4 hover:text-foreground/70"
+                      >
                         Edit
                       </button>
                     </td>

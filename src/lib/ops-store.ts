@@ -91,7 +91,7 @@ let batchSeq = 1200;
 const nextBatchId = () => `B-${batchSeq++}`;
 
 let auditSeq = 1;
-function logAudit(userId: number, userName: string, action: string, target: string) {
+export function logAudit(userId: number, userName: string, action: string, target: string) {
   state = {
     ...state,
     auditLog: [

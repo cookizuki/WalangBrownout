@@ -88,6 +88,25 @@ export function createAccount(input: { name: string; email: string; username?: s
   return acct;
 }
 
+export function updateAccount(id: string, updates: { name?: string; email?: string; role?: Role }): Account | null {
+  const accounts = listAccounts();
+  const idx = accounts.findIndex(a => a.id === id);
+  if (idx === -1) return null;
+
+  const updated: Account = {
+    ...accounts[idx],
+    ...(updates.name ? { name: updates.name.trim() } : {}),
+    ...(updates.email ? { email: updates.email.trim().toLowerCase() } : {}),
+    ...(updates.role ? { role: updates.role } : {}),
+  };
+
+  const next = [...accounts];
+  next[idx] = updated;
+  window.localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(next));
+  emit();
+  return updated;
+}
+
 export function emailTaken(email: string): boolean {
   return listAccounts().some(a => a.email === email.trim().toLowerCase());
 }
