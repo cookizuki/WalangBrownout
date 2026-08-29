@@ -223,11 +223,18 @@ export function AdminPage() {
                 + Add Supplier
               </button>
             </div>
-            <ul className="divide-y divide-dashed divide-border">
+                        <ul className="divide-y divide-dashed divide-border">
               {suppliers.map(s => (
                 <li key={s.id} className="px-5 py-3 text-sm">
                   <div className="font-medium">{s.name}</div>
-                  <div className="text-xs text-muted-foreground">{s.contact}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {s.contact}{s.contactRole ? ` · ${s.contactRole}` : ""}
+                  </div>
+                  {(s.address || s.landline) && (
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">
+                      {s.address}{s.address && s.landline ? " · " : ""}{s.landline}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

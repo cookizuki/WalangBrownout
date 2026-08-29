@@ -409,11 +409,16 @@ export function addProduct(input: {
 
 let supplierSeq = 100;
 /** Administrator adds a new supplier to the directory. */
-export function addSupplier(input: { name: string; contact: string; email: string; phone: string }) {
+export function addSupplier(input: {
+  name: string; contact: string; contactRole?: string; email: string; phone: string; address?: string; landline?: string;
+}) {
   const newSupplier: Supplier = {
     id: supplierSeq++,
     name: input.name,
     contact: input.contact,
+    contactRole: input.contactRole || undefined,
+    address: input.address || undefined,
+    landline: input.landline || undefined,
   };
   state = { ...state, suppliers: [newSupplier, ...state.suppliers] };
   emit();

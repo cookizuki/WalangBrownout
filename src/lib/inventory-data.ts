@@ -10,7 +10,14 @@ export type AlertStatus = "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
 export type TxType = "RECEIPT" | "SALE" | "RETURN" | "TRANSFER" | "ADJUSTMENT" | "WRITE_OFF";
 export type Channel = "IN_STORE" | "ONLINE" | "WAREHOUSE";
 
-export interface Supplier { id: number; name: string; contact: string; }
+export interface Supplier {
+  id: number;
+  name: string;
+  contact: string;
+  contactRole?: string;
+  address?: string;
+  landline?: string;
+}
 export interface Category { id: number; name: string; description: string; }
 export interface WarehouseLocation { id: number; code: string; description: string; }
 export interface Product {
@@ -59,9 +66,9 @@ export interface Alert {
 }
 
 export const suppliers: Supplier[] = [
-  { id: 1, name: "CoolAir Distributors PH", contact: "Ana Reyes" },
-  { id: 2, name: "PureBreathe Filters Co.", contact: "Miguel Santos" },
-  { id: 3, name: "SmartHome Imports", contact: "Jenny Cruz" },
+  { id: 1, name: "CoolAir Distributors PH", contact: "Ana Reyes", contactRole: "Sales Manager", address: "123 Industrial Ave, Cabuyao, Laguna", landline: "(049) 123-4567" },
+  { id: 2, name: "PureBreathe Filters Co.", contact: "Miguel Santos", contactRole: "Account Executive", address: "45 Filter St, Santa Rosa, Laguna", landline: "(049) 234-5678" },
+  { id: 3, name: "SmartHome Imports", contact: "Jenny Cruz", contactRole: "Purchasing Liaison", address: "78 Smart Blvd, Biñan, Laguna", landline: "(049) 345-6789" },
 ];
 
 export const categories: Category[] = [
