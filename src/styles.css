@@ -142,22 +142,3 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
-@media print {
-  aside, header, .print\:hidden {
-    display: none !important;
-  }
-  main {
-    padding: 0 !important;
-  }
-  #reports-print-area {
-    color: #111 !important;
-  }
-  #reports-print-area .card-surface {
-    border: 1px solid #ccc !important;
-    box-shadow: none !important;
-    break-inside: avoid;
-  }
-  body {
-    background: #fff !important;
-  }
-}
