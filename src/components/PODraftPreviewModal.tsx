@@ -6,6 +6,7 @@ export interface PODraftPreviewData {
   productName: string;
   supplierName: string;
   supplierContact: string;
+  supplierTin?: string;
   quantity: number;
   unitCost: number;
   onHand: number;
@@ -80,6 +81,9 @@ export function PODraftPreviewModal({
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Supplier Information</p>
               <p className="mt-1.5 text-sm font-semibold">{data.supplierName}</p>
               <p className="text-xs text-muted-foreground">{data.supplierContact}</p>
+              {data.supplierTin && (
+                <p className="mt-0.5 font-mono text-xs text-muted-foreground">TIN: {data.supplierTin}</p>
+              )}
             </div>
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Order Information</p>

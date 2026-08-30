@@ -775,7 +775,7 @@ function MyDayPage({ role, name, alerts }: { role: Role; name: string; alerts: A
 
 function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
 
-  const { products: liveProducts } = useOps();
+  const { products: liveProducts, suppliers: liveSuppliers} = useOps();
   const rows = liveProducts
     .map(p => {
       const qty = onHand(p.sku);
@@ -825,8 +825,9 @@ function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
                             ? `${p.avgDailyUsage} × ${p.seasonalFactor} × ${p.leadTimeDays} + ${p.safetyStock} (seasonal)`
                             : `${p.avgDailyUsage} × ${p.leadTimeDays} + ${p.safetyStock} (standard)`
                         }
-                        supplierName={suppliers.find(s => s.id === p.supplierId)?.name ?? "Unknown supplier"}
-                        supplierContact={suppliers.find(s => s.id === p.supplierId)?.contact ?? "—"}
+                        supplierName={liveSuppliers.find(s => s.id === p.supplierId)?.name ?? "Unknown supplier"}
+                        supplierContact={liveSuppliers.find(s => s.id === p.supplierId)?.contact ?? "—"}
+                        supplierTin={liveSuppliers.find(s => s.id === p.supplierId)?.tin}
                       />
                     </Td>
                   </tr>
@@ -846,7 +847,7 @@ function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
           <ul className="divide-y divide-dashed divide-border">
             {purchaseOrders.map(po => {
               const p = products.find(pp => pp.sku === po.sku);
-              const s = suppliers.find(su => su.id === po.supplierId);
+              const s = liveSuppliers.find(su => su.id === po.supplierId);
               return (
                 <li key={po.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm">
                   <div className="min-w-0">

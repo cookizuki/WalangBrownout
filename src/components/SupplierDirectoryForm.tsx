@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export interface SupplierFormValues {
-  name: string; contact: string; contactRole: string; email: string; phone: string; address: string; landline: string;
+  name: string; contact: string; contactRole: string; email: string; phone: string; address: string; landline: string; tin: string;
 }
 
 export function SupplierDirectoryForm({
@@ -15,6 +15,7 @@ export function SupplierDirectoryForm({
   const [address, setAddress] = useState("");
   const [landline, setLandline] = useState("");
   const [error, setError] = useState("");
+  const [tin, setTin] = useState("");
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,6 +23,7 @@ export function SupplierDirectoryForm({
     onSave({
       name: name.trim(), contact: contact.trim(), contactRole: contactRole.trim(),
       email: email.trim(), phone: phone.trim(), address: address.trim(), landline: landline.trim(),
+      tin: tin.trim(),
     });
   };
 
@@ -65,10 +67,21 @@ export function SupplierDirectoryForm({
           </label>
         </div>
 
-        <label className="mt-3 block text-xs">
-          <span className="font-semibold text-muted-foreground">Landline</span>
-          <input value={landline} onChange={e => setLandline(e.target.value)} placeholder="(049) 123-4567" className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
-        </label>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className="block text-xs">
+            <span className="font-semibold text-muted-foreground">Landline</span>
+            <input value={landline} onChange={e => setLandline(e.target.value)} placeholder="(049) 123-4567" className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+          </label>
+          <label className="block text-xs">
+            <span className="font-semibold text-muted-foreground">TIN</span>
+            <input
+              value={tin}
+              onChange={e => setTin(e.target.value.replace(/[^\d-]/g, "").slice(0, 15))}
+              placeholder="123-456-789-000"
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </label>
+        </div>
 
         {error && <p className="mt-3 text-xs font-medium text-danger">{error}</p>}
 

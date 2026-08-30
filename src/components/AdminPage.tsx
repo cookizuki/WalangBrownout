@@ -252,6 +252,9 @@ export function AdminPage() {
                       {s.address}{s.address && s.landline ? " · " : ""}{s.landline}
                     </div>
                   )}
+                  {s.tin && (
+                    <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">TIN: {s.tin}</div>
+                  )}
                 </li>
               ))}
             </ul>
