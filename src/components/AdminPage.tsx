@@ -10,6 +10,7 @@ import { SupplierDirectoryForm } from "@/components/SupplierDirectoryForm";
 import { LocationSetupWidget } from "@/components/LocationSetupWidget";
 import { toast } from "sonner";
 import { EditUserModal } from "@/components/EditUserModal";
+import { PODraftPreviewModal, type PODraftPreviewData } from "@/components/PODraftPreviewModal";
 
 
 const initials = (name: string) =>
@@ -25,6 +26,7 @@ export function AdminPage() {
   const [showSupplierForm, setShowSupplierForm] = useState(false);
   const { suppliers, locations } = useOps();
   const [editingUser, setEditingUser] = useState<Account | null>(null);
+  const [previewingPO, setPreviewingPO] = useState<string | null>(null);
 
   useEffect(() => setAccounts(listAccounts()), []);
 
@@ -84,7 +86,7 @@ export function AdminPage() {
       )}
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
+            <table className="w-full min-w-180 text-left text-sm">
               <thead className="border-b border-border text-[10px] uppercase tracking-widest text-muted-foreground">
                 <tr>
                   <th className="px-5 py-3 font-semibold">User</th>
@@ -174,18 +176,11 @@ export function AdminPage() {
                     </div>
                     <div className="flex shrink-0 gap-2">
                       <button
-                        onClick={() => resolvePO(po.id, "Approved")}
+                        onClick={() => setPreviewingPO(po.id)}
                         disabled={leaving.includes(po.id)}
                         className="rounded-md bg-foreground px-4 py-1.5 text-xs font-semibold text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {leaving.includes(po.id) ? "Approved" : "Approve"}
-                      </button>
-                      <button
-                        onClick={() => resolvePO(po.id, "Rejected")}
-                        disabled={leaving.includes(po.id)}
-                        className="rounded-md border border-border px-4 py-1.5 text-xs font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Reject
+                        {leaving.includes(po.id) ? "Approved" : "Review"}
                       </button>
                     </div>
                   </div>
@@ -311,6 +306,64 @@ export function AdminPage() {
           }}
         />
       )}
+
+      {previewingPO &&
+  (() => {
+    const po = pending.find((p) => p.id === previewingPO);
+
+    if (!po) return null;
+
+    const data: PODraftPreviewData = {
+      poNumber: po.id,
+      sku: po.sku,
+      productName: po.itemLabel,
+      supplierName: po.supplier,
+      supplierContact: "—",
+      quantity: po.quantity,
+      unitCost: po.totalCost / po.quantity,
+      requestedBy: po.requestedBy,
+    };
+
+    return (
+      <PODraftPreviewModal
+        mode="approval"
+        data={data}
+        onBack={() => {
+          setPreviewingPO(null);
+        }}
+
+        onReject={() => {
+          resolvePO(po.id, "Rejected");
+
+          if (account) {
+            logAudit(
+              Number(account.id.replace(/\D/g, "")) || 1,
+              account.name,
+              "Rejected purchase order",
+              po.id
+            );
+          }
+
+          setPreviewingPO(null);
+        }}
+
+        onConfirm={() => {
+          resolvePO(po.id, "Approved");
+
+          if (account) {
+            logAudit(
+              Number(account.id.replace(/\D/g, "")) || 1,
+              account.name,
+              "Approved purchase order",
+              po.id
+            );
+          }
+
+          setPreviewingPO(null);
+        }}
+      />
+    );
+  })()}
     </div>
   );
 }
