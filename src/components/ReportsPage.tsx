@@ -12,6 +12,10 @@ const MONTH_LABELS = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
+function exportReportsPDF() {
+  window.print();
+}
+
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
@@ -78,7 +82,24 @@ export function ReportsPage() {
   const abcColor = { A: c["--abc-a"], B: c["--abc-b"], C: c["--abc-c"] } as const;
 
   return (
-    <div className="space-y-6">
+    <div id="reports-print-area" className="space-y-6">
+      <div className="flex items-center justify-between print:hidden">
+        <p className="text-xs text-muted-foreground">Export a printable copy of this report</p>
+        <button
+          onClick={exportReportsPDF}
+          className="rounded-md border border-border px-4 py-2 text-xs font-semibold transition-colors hover:bg-muted"
+        >
+          Export as PDF
+        </button>
+      </div>
+
+      <div className="hidden print:block">
+        <h1 className="text-2xl font-bold">WalangBrownout Appliances — Inventory Reports</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Generated {new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })}
+        </p>
+      </div>
+
       <div className="space-y-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
           Shrinkage report — aggregated from Adjustment and Write-Off transactions
