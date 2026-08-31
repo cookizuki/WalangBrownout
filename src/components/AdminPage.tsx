@@ -307,22 +307,23 @@ export function AdminPage() {
         />
       )}
 
-      {previewingPO &&
-  (() => {
-    const po = pending.find((p) => p.id === previewingPO);
-
-    if (!po) return null;
-
-    const data: PODraftPreviewData = {
-      poNumber: po.id,
-      sku: po.sku,
-      productName: po.itemLabel,
-      supplierName: po.supplier,
-      supplierContact: "—",
-      quantity: po.quantity,
-      unitCost: po.totalCost / po.quantity,
-      requestedBy: po.requestedBy,
-    };
+      {previewingPO && (() => {
+        const po = pending.find(p => p.id === previewingPO);
+        if (!po) return null;
+        const matchedSupplier = suppliers.find(s => s.id === po.supplierId);
+        const data: PODraftPreviewData = {
+          poNumber: po.id,
+          sku: po.sku,
+          productName: po.itemLabel,
+          supplierName: po.supplier,
+          supplierContact: matchedSupplier
+            ? `${matchedSupplier.contact}${matchedSupplier.contactRole ? ` · ${matchedSupplier.contactRole}` : ""}`
+            : "—",
+          supplierTin: matchedSupplier?.tin,
+          quantity: po.quantity,
+          unitCost: po.totalCost / po.quantity,
+          requestedBy: po.requestedBy,
+        };
 
     return (
       <PODraftPreviewModal

@@ -213,6 +213,7 @@ export function draftPO(input: { sku: string; quantity: number; requestedBy: str
 
   const po: PendingPO = {
     id: nextPOId(),
+    supplierId: p.supplierId,
     supplier: supplier?.name ?? "Unknown supplier",
     sku: p.sku,
     itemLabel: p.name,
