@@ -39,7 +39,7 @@ export function StockCountsPage({ mode }: { mode: "entry" | "review" }) {
         footer="Variance drives the Adjustment transaction logged against the batch"
       >
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-sm">
+          <table className="w-full min-w-205 text-sm">
             <thead className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
               <tr className="border-b border-border">
                 <Th>Count ID</Th><Th>Product</Th><Th>Location</Th><Th>System</Th>
@@ -197,7 +197,7 @@ export function TransactionLogPage() {
           />
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[880px] text-sm">
+          <table className="w-full min-w-220 text-sm">
             <thead className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
               <tr className="border-b border-border">
                 <Th>Transaction</Th><Th>Product</Th><Th>Batch</Th><Th>Type</Th>
@@ -243,12 +243,12 @@ export function BatchesPage({ canAdjust = false }: { canAdjust?: boolean }) {
 
   return (
     <div className="space-y-2">
-      <SectionLabel>
-        Batch tracking panel — one row per received lot{canAdjust ? "" : " · read-only"}
-      </SectionLabel>
+      <h2 className="text-xl font-bold text-foreground">
+        Batch Tracking Panel{canAdjust ? "" : " · read-only"}
+      </h2>
       <div className="card-surface overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-sm">
+          <table className="w-full min-w-205 text-sm">
             <thead className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
               <tr className="border-b border-border">
                 <Th>Batch ID</Th><Th>SKU</Th><Th>Qty Remaining</Th><Th>Received</Th>

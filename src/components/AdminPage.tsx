@@ -45,12 +45,12 @@ export function AdminPage() {
       {/* Section 1 — user management */}
       <section className="space-y-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Section 1 — user management (System Administrator responsibility)
+          User management (System Administrator responsibility)
         </p>
         <div className="card-surface">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
             <div>
-              <h2 className="text-sm font-semibold">Users</h2>
+              <h2 className="text-lg font-semibold">Users</h2>
               <p className="text-xs text-muted-foreground">Manage accounts, roles, and access</p>
             </div>
             <button
@@ -141,11 +141,11 @@ export function AdminPage() {
       {/* Section 2 — PO approval queue */}
       <section className="space-y-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Section 2 — purchase order approval queue (Purchasing Manager responsibility)
+          purchase order approval queue (Purchasing Manager responsibility)
         </p>
         <div className="card-surface">
           <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <h2 className="text-sm font-semibold">Pending Purchase Orders</h2>
+            <h2 className="text-lg font-semibold">Pending Purchase Orders</h2>
             <span className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground">
               {pending.length} PENDING
             </span>
@@ -201,11 +201,11 @@ export function AdminPage() {
             {/* Section 3 — product catalog */}
       <section className="space-y-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Section 3 — product catalog (System Administrator responsibility)
+          product catalog (System Administrator responsibility)
         </p>
         <div className="card-surface flex items-center justify-between px-5 py-4">
           <div>
-            <h2 className="text-sm font-semibold">Products</h2>
+            <h2 className="text-lg font-semibold">Products</h2>
             <p className="text-xs text-muted-foreground">Add new SKUs to the catalog</p>
           </div>
           <button
@@ -219,13 +219,13 @@ export function AdminPage() {
       {/* Section 3b — suppliers & locations */}
       <section className="space-y-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Section 3b — supplier directory & warehouse locations (System Administrator responsibility)
+          supplier directory & warehouse locations (System Administrator responsibility)
         </p>
         <div className="grid gap-5 lg:grid-cols-2">
           <div className="card-surface">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <div>
-                <h2 className="text-sm font-semibold">Suppliers</h2>
+                <h2 className="text-lg font-semibold">Suppliers</h2>
                 <p className="text-xs text-muted-foreground">{suppliers.length} on file</p>
               </div>
               <button
@@ -257,7 +257,7 @@ export function AdminPage() {
 
           <div className="card-surface p-5">
             <div className="mb-3">
-              <h2 className="text-sm font-semibold">Warehouse Locations</h2>
+              <h2 className="text-lg font-semibold">Warehouse Locations</h2>
               <p className="text-xs text-muted-foreground">{locations.length} zones mapped</p>
             </div>
             <LocationSetupWidget
@@ -291,7 +291,7 @@ export function AdminPage() {
       {/* Section 4 — audit trail */}
       <section className="space-y-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Section 4 — system audit trail (System Administrator responsibility)
+          system audit trail (System Administrator responsibility)
         </p>
         <AuditLogPanel />
       </section>

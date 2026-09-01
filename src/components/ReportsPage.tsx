@@ -84,7 +84,7 @@ export function ReportsPage() {
   return (
     <div id="reports-print-area" className="space-y-6">
       <div className="flex items-center justify-between print:hidden">
-        <p className="text-xs text-muted-foreground">Export a printable copy of this report</p>
+        <p className="text-xs text-muted-foreground"></p>
         <button
           onClick={exportReportsPDF}
           className="rounded-md border border-border px-4 py-2 text-xs font-semibold transition-colors hover:bg-muted"
@@ -106,7 +106,7 @@ export function ReportsPage() {
         </p>
         <div className="card-surface overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-4">
-            <h2 className="text-sm font-semibold">End-of-Month Shrinkage</h2>
+            <h2 className="text-lg font-semibold">End-of-Month Shrinkage</h2>
             <span className="rounded-full border border-danger/40 px-3 py-1 text-[11px] font-semibold text-danger">
               {money(totalShrinkageCost)} total
             </span>
@@ -138,7 +138,7 @@ export function ReportsPage() {
         </p>
         <div className="card-surface overflow-hidden">
           <div className="border-b border-border px-5 py-4">
-            <h2 className="text-sm font-semibold">Historical Sales Velocity</h2>
+            <h2 className="text-lg font-semibold">Historical Sales Velocity</h2>
           </div>
           <div className="px-3 py-4">
             {velocityBySku.length === 0 ? (

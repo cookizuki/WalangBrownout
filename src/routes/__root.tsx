@@ -89,7 +89,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "icon", href: "/favicon.jpg", type: "image/png" },
     ],
   }),
   shellComponent: RootShell,
@@ -119,7 +119,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
-      <Toaster position="bottom-right" richColors closeButton />
+      <Toaster position="top-right" richColors closeButton />
     </QueryClientProvider>
   );
 }

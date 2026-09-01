@@ -184,7 +184,6 @@ function Dashboard() {
             <h1 className="truncate font-display text-xl font-semibold leading-tight sm:text-2xl">{meta.title}</h1>
             <p className="truncate text-xs text-muted-foreground">{meta.subtitle}</p>
           </div>
-          <LiveClock />
           <span className="hidden shrink-0 items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[10px] font-medium text-muted-foreground sm:flex">
             <kbd className="font-sans">ctrl + K</kbd> to search
           </span>
@@ -193,7 +192,7 @@ function Dashboard() {
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search…"
-              className="col-span-2 w-full rounded-full border border-border bg-background px-4 py-2 text-sm outline-none focus:border-primary md:order-none md:col-span-1 md:w-56"
+              className="col-span-2 w-full rounded-full border border-border bg-background px-4 py-2 text-sm outline-none focus:border-primary md:order-0 md:col-span-1 md:w-56"
             />
           )}
         </header>
@@ -249,11 +248,9 @@ function SideNav({
             alt="WalangBrownout logo"
             className="h-7 w-7 rounded-md object-cover"
           />
-
           <span className="font-semibold">Inventory OS</span>
         </div>
       </div>
-
 
       <p className="px-5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Main navigation</p>
       <nav className="mt-2 flex flex-col gap-1 px-3">
@@ -285,7 +282,15 @@ function SideNav({
         })}
       </nav>
 
+      {/* --- BOTTOM SECTION --- */}
       <div className="mt-auto px-5 py-5">
+        
+        {/* 1. Live Clock injected here with a bottom margin for spacing */}
+        <div className="mb-6">
+          <LiveClock />
+        </div>
+
+        {/* 2. Existing User Profile Section */}
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">User profile / account</p>
         <div className="mt-2 flex items-center gap-2 border-t border-dashed border-border pt-3">
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold">
@@ -309,19 +314,22 @@ function SideNav({
   );
 }
 
-
 function LiveClock() {
   const [now, setNow] = useState<string>("");
+
   useEffect(() => {
-    const tick = () => setNow(new Date().toLocaleTimeString("en-PH", { hour12: false }));
+    const tick = () => setNow(new Date().toLocaleTimeString("en-PH", { hour12: true }));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
+
   return (
-    <div className="text-right">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Live system clock</p>
-      <div className="flex items-center justify-end gap-1.5 font-mono text-sm">
+    <div className="text-left">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+        Live system clock
+      </p>
+      <div className="flex items-center justify-start gap-1.5 font-mono text-sm text-foreground">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
         {now || "--:--:--"}
       </div>
@@ -345,7 +353,7 @@ function OverviewPage({ query, alerts, onAck }: { query: string; alerts: Alert[]
 
   return (
     <div className="space-y-5">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">KPI summary cards</p>
+      <h2 className="text-xl font-bold text-foreground">KPI Summary Cards</h2>
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi value={products.length} label="Active SKUs Tracked" />
         <Kpi value={alerts.length} label="Open Alerts" />
@@ -360,7 +368,7 @@ function OverviewPage({ query, alerts, onAck }: { query: string; alerts: Alert[]
           </p>
           <div className="card-surface">
             <div className="flex items-center justify-between border-b border-border px-5 py-3">
-              <h2 className="text-sm font-semibold">Live Transaction Feed</h2>
+              <h2 className="text-lg font-semibold">Live Transaction Feed</h2>
               <span className="chip bg-success/15 text-success">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> streaming
               </span>
@@ -401,7 +409,7 @@ function OverviewPage({ query, alerts, onAck }: { query: string; alerts: Alert[]
           </p>
           <div className="card-surface flex h-full flex-col">
             <div className="border-b border-border px-5 py-3">
-              <h2 className="text-sm font-semibold">Active Alerts</h2>
+              <h2 className="text-lg font-semibold">Active Alerts</h2>
             </div>
             <div className="flex flex-1 flex-col gap-3 p-4">
               {alerts.slice(0, 3).map(a => (
@@ -481,7 +489,7 @@ function InventoryPage({ query, canExport = false }: { query: string; canExport?
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Product table panel</p>
+        <h2 className="text-xl font-bold text-foreground">Product Table Panel</h2>
         {canExport && (
           <button
             onClick={exportCSV}
@@ -516,7 +524,7 @@ function InventoryPage({ query, canExport = false }: { query: string; canExport?
         </div>
 
         <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] text-sm">
+        <table className="w-full min-w-180 text-sm">
           <thead className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
             <tr className="border-b border-border">
               <Th>SKU</Th><Th>Product</Th><Th>Class</Th><Th>Stock Level</Th>
@@ -589,13 +597,12 @@ function AlertsPage({ alerts, onAck }: { alerts: Alert[]; onAck: (id: string) =>
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Alert list panel — full history, not just top 3
         </p>
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Open-count badge</p>
       </div>
       <div className="card-surface">
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <h2 className="text-sm font-semibold">All Alerts</h2>
+          <h2 className="text-xl font-bold text-foreground">All Alerts</h2>
           <span className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground">
             {alerts.length} OPEN
           </span>
@@ -675,7 +682,7 @@ function MyDayPage({ role, name, alerts }: { role: Role; name: string; alerts: A
 
   return (
     <div className="space-y-5">
-      <SectionLabel>KPI summary cards</SectionLabel>
+      <h2 className="text-xl font-bold text-foreground">KPI Summary Cards</h2>
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {isWarehouse ? (
           <>
@@ -791,7 +798,7 @@ function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
         <SectionLabel>Reorder queue — ROP breaches ready for purchasing</SectionLabel>
         <Panel title="Suggested Reorders" footer="Standard ROP = ADU × Lead Time + Safety Stock · Seasonal ROP multiplies ADU by the seasonal factor">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px] text-sm">
+            <table className="w-full min-w-200 text-sm">
               <thead className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
                 <tr className="border-b border-border">
                   <Th>SKU</Th><Th>Product</Th><Th>On Hand / ROP</Th><Th>Formula</Th>
@@ -909,7 +916,7 @@ function PickTasksPage() {
         footer="Picking a different lot than the assigned batch breaks FIFO and raises a variance alert"
       >
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-sm">
+          <table className="w-full min-w-225 text-sm">
             <thead className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
               <tr className="border-b border-border">
                 <Th>Task</Th><Th>Product</Th><Th>Pick From</Th><Th>Qty</Th>
@@ -989,7 +996,7 @@ function ReceivingPage() {
         <ScanInput onScan={handleScan} placeholder="Scan or type a SKU / PO number, then press Enter" />
         <Panel title="Receiving & Putaway" footer="Receiving creates a new inventory batch stamped with date received and its warehouse location">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[880px] text-sm">
+            <table className="w-full min-w-220 text-sm">
               <thead className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
                 <tr className="border-b border-border">
                   <Th>Line</Th><Th>PO</Th><Th>Product</Th><Th>Supplier</Th>

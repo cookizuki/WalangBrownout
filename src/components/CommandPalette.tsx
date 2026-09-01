@@ -61,7 +61,7 @@ export function CommandPalette({ onNavigate }: { onNavigate: (tab: string) => vo
       open={open}
       onOpenChange={setOpen}
       label="Command palette"
-      className="fixed left-1/2 top-24 z-[60] w-full max-w-lg -translate-x-1/2 overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+      className="fixed left-1/2 top-24 z-60 w-full max-w-lg -translate-x-1/2 overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
     >
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
         <span className="text-muted-foreground">⌘</span>

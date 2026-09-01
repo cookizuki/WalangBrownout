@@ -19,7 +19,10 @@ export function Panel({
   return (
     <div className="card-surface overflow-hidden">
       <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
+        
+        {/* Replaced text-sm with text-xl and font-bold */}
+        <h2 className="text-xl font-bold text-foreground">{title}</h2>
+        
         {right}
       </div>
       {children}
