@@ -49,6 +49,7 @@ export function CommandPalette({ onNavigate }: { onNavigate: (tab: string) => vo
         onNavigate("picks");
         window.setTimeout(() => document.querySelector<HTMLInputElement>("input[placeholder*='Scan']")?.focus(), 80);
       } }),
+    item({ id: "salesorders", label: "Go to Sales Orders", group: "Navigate", roles: ["ADMIN", "INVENTORY_STAFF"], action: () => onNavigate("salesorders") }),
   ].filter(i => i.roles.includes(account.role));
 
   const run = (item: PaletteItem) => {

@@ -24,6 +24,8 @@ import {
   type Product,
   type ReceivingLine,
   type TxLog,
+  type Priority,
+  type TaskStatus,
   onHand,
   ropStandard,
   ropSeasonal,
@@ -477,6 +479,73 @@ export function fifoBatches(sku: string, all: InventoryBatch[]): InventoryBatch[
   return all
     .filter(b => b.sku === sku && b.quantityRemaining > 0)
     .sort((a, b) => a.dateReceived.localeCompare(b.dateReceived));
+}
+export interface SalesOrderLine {
+  sku: string;
+  batchId: string;
+  locationId: number;
+  quantity: number;
+  status: TaskStatus;
+  priority: Priority;
+}
+
+export interface SalesOrder {
+  orderRef: string;
+  lines: SalesOrderLine[];
+  totalQty: number;
+  status: TaskStatus;
+  priority: Priority;
+}
+
+const PRIORITY_RANK: Record<Priority, number> = { HIGH: 0, NORMAL: 1, LOW: 2 };
+
+/**
+ * Derives a Sales Order view from the live Pick Tasks queue. Pick tasks
+ * already carry an `orderRef` (e.g. "SO-20881") — a sales order is just
+ * the group of tasks that share one. No separate SO entity/CRUD is
+ * introduced; full sales-order management (customers, invoicing, etc.)
+ * is out of scope for this system.
+ */
+export function deriveSalesOrders(pickTasks: PickTask[]): SalesOrder[] {
+  const byOrder = new Map<string, PickTask[]>();
+  for (const t of pickTasks) {
+    const group = byOrder.get(t.orderRef);
+    if (group) group.push(t);
+    else byOrder.set(t.orderRef, [t]);
+  }
+
+  return Array.from(byOrder.entries())
+    .map(([orderRef, tasks]) => {
+      const totalQty = tasks.reduce((s, t) => s + t.quantity, 0);
+      const allDone = tasks.every(t => t.status === "DONE");
+      const anyStarted = tasks.some(t => t.status !== "PENDING");
+      const status: TaskStatus = allDone ? "DONE" : anyStarted ? "IN_PROGRESS" : "PENDING";
+      const priority = tasks.reduce(
+        (best, t) => (PRIORITY_RANK[t.priority] < PRIORITY_RANK[best] ? t.priority : best),
+        tasks[0].priority,
+      );
+      return {
+        orderRef,
+        totalQty,
+        status,
+        priority,
+        lines: tasks.map(t => ({
+          sku: t.sku,
+          batchId: t.batchId,
+          locationId: t.locationId,
+          quantity: t.quantity,
+          status: t.status,
+          priority: t.priority,
+        })),
+      };
+    })
+    .sort((a, b) => a.orderRef.localeCompare(b.orderRef));
+}
+
+/** Live sales orders — recomputes whenever pick tasks change. */
+export function useSalesOrders(): SalesOrder[] {
+  const { pickTasks } = useOps();
+  return useMemo(() => deriveSalesOrders(pickTasks), [pickTasks]);
 }
 /**
  * Computes all alerts from the CURRENT live store state — recalculated

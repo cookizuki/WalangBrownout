@@ -26,6 +26,7 @@ import { ScanInput } from "@/components/ScanInput";
 import { toast } from "sonner";
 import { CommandPalette } from "@/components/CommandPalette";
 import { TxTypeBadge } from "@/lib/tx-type-styles";
+import { SalesOrdersPage } from "@/components/SalesOrdersPage";
 import wbLogo from "@/assets/WB LOGO.jpg";
 
 
@@ -47,7 +48,7 @@ export const Route = createFileRoute("/")({
 type Tab =
   | "overview" | "inventory" | "batches" | "alerts"
   | "myday" | "counts" | "txlog" | "reorder"
-  | "picks" | "receiving" | "admin" | "reports";
+  | "picks" | "receiving" | "admin" | "reports" | "salesorders";
 
 const PAGE_META: Record<Tab, { title: string; subtitle: string }> = {
   overview: { title: "Overview", subtitle: "Real-time status" },
@@ -62,11 +63,12 @@ const PAGE_META: Record<Tab, { title: string; subtitle: string }> = {
   receiving: { title: "Receiving", subtitle: "Inbound POs, putaway and location" },
   admin: { title: "Admin", subtitle: "User management and purchase order approvals" },
   reports: { title: "Reports", subtitle: "Shrinkage and sales velocity history" },
+  salesorders: { title: "Sales Orders", subtitle: "Order fulfillment status, derived from the pick queue" },
 };
 
 const ROLE_NAV: Record<Role, Tab[]> = {
-  ADMIN: ["overview", "inventory", "batches", "alerts", "reports", "admin"],
-  INVENTORY_STAFF: ["myday", "inventory", "counts", "txlog", "reorder", "batches", "alerts"],
+  ADMIN: ["overview", "inventory", "batches", "alerts", "salesorders", "reports", "admin"],
+  INVENTORY_STAFF: ["myday", "inventory", "counts", "txlog", "reorder", "salesorders", "batches", "alerts"],
   WAREHOUSE_STAFF: ["myday", "counts", "picks", "receiving", "batches", "alerts"],
 };
 
@@ -216,6 +218,7 @@ function Dashboard() {
           {tab === "receiving" && <ReceivingPage />}
           {tab === "admin" && account.role === "ADMIN" && <AdminPage />}
           {tab === "reports" && account.role === "ADMIN" && <ReportsPage />}
+          {tab === "salesorders" && <SalesOrdersPage />}
         </main>
         {(account.role === "WAREHOUSE_STAFF" || account.role === "ADMIN") && <QuickActionMenu />}
         <CommandPalette onNavigate={t => setTab(t as Tab)} />
