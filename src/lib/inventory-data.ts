@@ -5,7 +5,7 @@
 // purchase_order_item.
 
 export type ABC = "A" | "B" | "C";
-export type AlertType = "LOW_STOCK" | "SEASONAL_REORDER" | "NEAR_EXPIRY" | "VARIANCE";
+export type AlertType = "LOW_STOCK" | "SEASONAL_REORDER" | "NEAR_EXPIRY" | "VARIANCE" | "PO_OVERDUE";
 export type AlertStatus = "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
 export type TxType = "RECEIPT" | "SALE" | "RETURN" | "TRANSFER" | "ADJUSTMENT" | "WRITE_OFF";
 export type Channel = "IN_STORE" | "ONLINE" | "WAREHOUSE";
@@ -171,11 +171,19 @@ export function daysUntil(dateISO?: string): number | null {
 }
 
 /** Auto-generate alerts from current product + batch state. */
+/** Auto-generate alerts from current product, batch, receiving, and cycle-count state. */
 export function deriveAlerts(): Alert[] {
   const out: Alert[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // ------------------------------------------------------------
+  // 1. LOW STOCK / SEASONAL REORDER
+  // ------------------------------------------------------------
   for (const p of products) {
     const stock = onHand(p.sku);
     const rop = p.seasonalFlag ? ropSeasonal(p) : ropStandard(p);
+
     if (stock <= rop) {
       out.push({
         id: `A-${p.sku}-ROP`,
@@ -189,23 +197,84 @@ export function deriveAlerts(): Alert[] {
       });
     }
   }
+
+  // ------------------------------------------------------------
+  // 2. NEAR EXPIRY
+  // ------------------------------------------------------------
   for (const b of batches) {
     const d = daysUntil(b.expirationDate);
+
     if (d !== null && d <= 30) {
       out.push({
         id: `A-${b.id}-EXP`,
         sku: b.sku,
         batchId: b.id,
         type: "NEAR_EXPIRY",
-        message: `Batch ${b.id} expires in ${d} days — release first (FIFO)`,
+        message:
+          d < 0
+            ? `Batch ${b.id} expired ${Math.abs(d)} days ago — release immediately`
+            : `Batch ${b.id} expires in ${d} days — release first (FIFO)`,
         status: "OPEN",
         createdAt: new Date().toISOString(),
       });
     }
   }
+
+  // ------------------------------------------------------------
+  // 3. PO OVERDUE
+  // ------------------------------------------------------------
+  for (const line of receivingLines) {
+    const expected = new Date(`${line.expectedDate}T00:00:00`);
+    expected.setHours(0, 0, 0, 0);
+
+    const isIncomplete =
+      line.status !== "PUT_AWAY" &&
+      line.quantityReceived < line.quantityOrdered;
+
+    if (expected < today && isIncomplete) {
+      const daysOverdue = Math.floor(
+        (today.getTime() - expected.getTime()) /
+          (1000 * 60 * 60 * 24)
+      );
+
+      out.push({
+        id: `A-${line.poNumber}-OVERDUE`,
+        sku: line.sku,
+        type: "PO_OVERDUE",
+        message:
+          `${line.poNumber} is ${daysOverdue} day${daysOverdue === 1 ? "" : "s"} overdue — ` +
+          `${line.quantityReceived}/${line.quantityOrdered} units received`,
+        status: "OPEN",
+        createdAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  // ------------------------------------------------------------
+  // 4. INVENTORY VARIANCE
+  // ------------------------------------------------------------
+  for (const count of cycleCounts) {
+    if (count.countedQty === null || count.countedQty === count.systemQty) {
+      continue;
+    }
+
+    const variance = count.countedQty - count.systemQty;
+    const direction = variance > 0 ? "over" : "under";
+
+    out.push({
+      id: `A-${count.id}-VAR`,
+      sku: count.sku,
+      type: "VARIANCE",
+      message:
+        `Cycle count variance — ${Math.abs(variance)} unit${Math.abs(variance) === 1 ? "" : "s"} ` +
+        `${direction} system quantity (${count.systemQty} → ${count.countedQty})`,
+      status: "OPEN",
+      createdAt: new Date().toISOString(),
+    });
+  }
+
   return out;
 }
-
 /** FIFO pick order: oldest dateReceived first. */
 export function fifoOrder(sku: string): InventoryBatch[] {
   return batches

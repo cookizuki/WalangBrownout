@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  batches, cycleCounts, deriveAlerts, locations, onHand, pickTasks, products,
+  batches, cycleCounts, locations, onHand, pickTasks, products,
   purchaseOrders, receivingLines, ropSeasonal, ropStandard, suppliers, transactions,
   money, type ABC, type Alert, type AlertType,
 } from "@/lib/inventory-data";
@@ -16,7 +16,7 @@ import {
   TimeAgo, daysLeft, titleCase,
 } from "@/components/ui-bits";
 import { DraftPOAction } from "@/components/DraftPOAction";
-import { useOps } from "@/lib/ops-store";
+import { useOps, useAlerts } from "@/lib/ops-store";
 import { FIFOExceptionPopover } from "@/components/FIFOExceptionPopover";
 import { ReceivingEntryModal } from "@/components/ReceivingEntryModal";
 import { QuickActionMenu } from "@/components/QuickActionMenu";
@@ -86,7 +86,7 @@ function Dashboard() {
     if (account) setTab(ROLE_NAV[account.role][0]!);
   }, [account?.role]);
 
-  const allAlerts = useMemo(deriveAlerts, []);
+  const allAlerts = useAlerts();
   const alerts = allAlerts.filter(a => !acked.includes(a.id));
   const openAlerts = alerts.length;
 
@@ -631,7 +631,7 @@ function AlertsPage({ alerts, onAck }: { alerts: Alert[]; onAck: (id: string) =>
 
 function AlertCard({ alert, onAck, compact = false }: { alert: Alert; onAck: (id: string) => void; compact?: boolean }) {
   const p = products.find(pp => pp.sku === alert.sku);
-  const tag = { LOW_STOCK: "STANDARD", SEASONAL_REORDER: "SEASONAL", NEAR_EXPIRY: "FIFO", VARIANCE: "VARIANCE" }[alert.type as AlertType];
+  const tag = { LOW_STOCK: "STANDARD", SEASONAL_REORDER: "SEASONAL", NEAR_EXPIRY: "FIFO", VARIANCE: "VARIANCE", PO_OVERDUE: "PO OVERDUE"}[alert.type as AlertType];
   const title = alert.batchId ? `${p?.name} — Batch ${alert.batchId}` : p?.name;
   const [acking, setAcking] = useState(false);
 
@@ -1008,7 +1008,7 @@ function ReceivingPage() {
                   const p = products.find(pp => pp.sku === r.sku);
                   const s = suppliers.find(su => su.id === r.supplierId);
                   const loc = locations.find(l => l.id === r.locationId);
-                  const canReceive = r.status !== "PUT_AWAY";
+                  const canReceive = r.status !== "PUT_AWAY" && r.quantityReceived < r.quantityOrdered;
                   return (
                     <tr key={r.id} className={`transition-colors duration-500 hover:bg-muted/40 ${highlighted === r.id ? "bg-success/10" : ""}`}>
                       <Td className="font-mono text-xs">{r.id}</Td>

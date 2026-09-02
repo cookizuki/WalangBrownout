@@ -3,7 +3,7 @@
 // One source of truth — every role reads the same data, filtered/permissioned
 // differently in the UI.
 
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, useMemo } from "react";
 import {
   batches as seedBatches,
   cycleCounts as seedCounts,
@@ -24,7 +24,13 @@ import {
   type Product,
   type ReceivingLine,
   type TxLog,
+  onHand,
+  ropStandard,
+  ropSeasonal,
+  daysUntil,
+  type Alert,
 } from "./inventory-data";
+
 
 export interface AuditEntry {
   id: string;
@@ -243,10 +249,12 @@ export function receiveDelivery(input: {
   quantityReceived: number;
   expirationDate?: string;
   userId?: number;
-}) {
+}): InventoryBatch | null {
   const line = state.receivingLines.find(r => r.id === input.lineId);
-  if (!line || !input.quantityReceived) return null;
-
+  if (!line || !input.quantityReceived || input.quantityReceived <= 0) return null;
+  const remaining = line.quantityOrdered - line.quantityReceived;
+  if (input.quantityReceived > remaining) return null;
+  
   const newBatch: InventoryBatch = {
     id: nextBatchId(),
     sku: line.sku,
@@ -469,6 +477,102 @@ export function fifoBatches(sku: string, all: InventoryBatch[]): InventoryBatch[
   return all
     .filter(b => b.sku === sku && b.quantityRemaining > 0)
     .sort((a, b) => a.dateReceived.localeCompare(b.dateReceived));
+}
+/**
+ * Computes all alerts from the CURRENT live store state — recalculated
+ * fresh every call, so it's safe to drive from useMemo with real
+ * dependencies (see useAlerts below) instead of computing once at mount.
+ * Deterministic IDs (keyed off the source entity's own ID) mean recomputing
+ * on every state change never produces duplicates.
+ */
+export function computeAlerts(s: Pick<OpsState, "products" | "batches" | "receivingLines" | "counts">): Alert[] {
+  const out: Alert[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // LOW_STOCK / SEASONAL_REORDER
+  for (const p of s.products) {
+    const stock = onHand(p.sku, s.batches);
+    const rop = p.seasonalFlag ? ropSeasonal(p) : ropStandard(p);
+    if (stock <= rop) {
+      out.push({
+        id: `A-${p.sku}-ROP`,
+        sku: p.sku,
+        type: p.seasonalFlag ? "SEASONAL_REORDER" : "LOW_STOCK",
+        message: p.seasonalFlag
+          ? `Seasonal ROP hit — on hand ${stock} ≤ ${rop} (factor ${p.seasonalFactor}×)`
+          : `Below reorder point — on hand ${stock} ≤ ${rop}`,
+        status: "OPEN",
+        createdAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  // NEAR_EXPIRY
+  for (const b of s.batches) {
+    const d = daysUntil(b.expirationDate);
+    if (d !== null && d <= 30) {
+      out.push({
+        id: `A-${b.id}-EXP`,
+        sku: b.sku,
+        batchId: b.id,
+        type: "NEAR_EXPIRY",
+        message: `Batch ${b.id} expires in ${d} days — release first (FIFO)`,
+        status: "OPEN",
+        createdAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  // PO_OVERDUE — expectedDate strictly before today, not fully received, not PUT_AWAY
+  for (const r of s.receivingLines) {
+    if (r.status === "PUT_AWAY") continue;
+    if (r.quantityReceived >= r.quantityOrdered) continue;
+    const expected = new Date(r.expectedDate);
+    expected.setHours(0, 0, 0, 0);
+    if (expected.getTime() >= today.getTime()) continue; // today or future = not overdue
+    const daysLate = Math.round((today.getTime() - expected.getTime()) / 86400000);
+    out.push({
+      id: `A-${r.id}-OVERDUE`,
+      sku: r.sku,
+      type: "PO_OVERDUE",
+      message: `${r.poNumber} is ${daysLate} day${daysLate === 1 ? "" : "s"} overdue — ${r.quantityReceived}/${r.quantityOrdered} units received`,
+      status: "OPEN",
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  // VARIANCE — completed counts only, skip exact matches
+  for (const c of s.counts) {
+    if (c.countedQty === null) continue;
+    if (c.countedQty === c.systemQty) continue;
+    const diff = c.countedQty - c.systemQty;
+    const direction = diff < 0 ? "under" : "over";
+    out.push({
+      id: `A-${c.id}-VAR`,
+      sku: c.sku,
+      type: "VARIANCE",
+      message: `Cycle count variance — ${Math.abs(diff)} units ${direction} system quantity (${c.systemQty} → ${c.countedQty})`,
+      status: "OPEN",
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  return out;
+}
+
+/**
+ * Live alert list — recomputes whenever the relevant slices of the store
+ * change (React re-renders whenever useOps()'s snapshot reference changes,
+ * so this useMemo's deps are real, not an empty array pretending to be
+ * "run once at mount").
+ */
+export function useAlerts(): Alert[] {
+  const { products, batches, receivingLines, counts } = useOps();
+  return useMemo(
+    () => computeAlerts({ products, batches, receivingLines, counts }),
+    [products, batches, receivingLines, counts],
+  );
 }
 /**
  * Suggests a seasonal multiplier for a SKU by comparing average daily sales

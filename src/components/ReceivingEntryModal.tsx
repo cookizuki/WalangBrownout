@@ -23,10 +23,13 @@ export function ReceivingEntryModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const remaining = line.quantityOrdered - line.quantityReceived;
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const q = Number(qty);
     if (!q || q <= 0) return setError("Enter a valid quantity received.");
+    if (q > remaining) return setError(`Quantity received cannot exceed the remaining quantity of ${remaining} units.`);
     if (!expiry) return setError("Expiration date is required to create the batch.");
     const newBatch = receiveDelivery({ lineId: line.id, quantityReceived: q, expirationDate: expiry });
     toast.success("Delivery received", {
@@ -89,7 +92,7 @@ export function ReceivingEntryModal({
             className="mt-1.5 w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary"
           />
           <span className="mt-1 block text-xs text-muted-foreground">
-            Ordered: {line.quantityOrdered}
+            Ordered: {line.quantityOrdered}{remaining !== line.quantityOrdered ? ` · Remaining: ${remaining}` : ""}
           </span>
         </label>
 
