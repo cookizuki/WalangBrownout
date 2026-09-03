@@ -27,6 +27,12 @@ import { toast } from "sonner";
 import { CommandPalette } from "@/components/CommandPalette";
 import { TxTypeBadge } from "@/lib/tx-type-styles";
 import { SalesOrdersPage } from "@/components/SalesOrdersPage";
+import {
+  LayoutDashboard, Package, Layers, Bell, CalendarCheck2, ClipboardList,
+  History, ShoppingCart, Boxes, Truck, ShieldCheck, BarChart3, Receipt,
+  TrendingDown, Sun, Clock, Scale, LogOut, RefreshCw, AlertTriangle,
+  type LucideIcon,
+} from "lucide-react";
 
 import wbLogo from "@/assets/WB LOGO.jpg";
 
@@ -65,6 +71,21 @@ const PAGE_META: Record<Tab, { title: string; subtitle: string }> = {
   admin: { title: "Admin", subtitle: "User management and purchase order approvals" },
   reports: { title: "Reports", subtitle: "Shrinkage and sales velocity history" },
   salesorders: { title: "Sales Orders", subtitle: "Order fulfillment status, derived from the pick queue" },
+};
+const TAB_ICONS: Record<Tab, LucideIcon> = {
+  overview: LayoutDashboard,
+  inventory: Package,
+  batches: Layers,
+  alerts: Bell,
+  myday: CalendarCheck2,
+  counts: ClipboardList,
+  txlog: History,
+  reorder: ShoppingCart,
+  picks: Boxes,
+  receiving: Truck,
+  admin: ShieldCheck,
+  reports: BarChart3,
+  salesorders: Receipt,
 };
 
 const ROLE_NAV: Record<Role, Tab[]> = {
@@ -266,6 +287,7 @@ function SideNav({
       <nav className="mt-2 flex flex-col gap-1 px-3">
         {tabs.map(key => {
           const active = tab === key;
+          const Icon = TAB_ICONS[key];
           return (
             <button
               key={key}
@@ -276,7 +298,10 @@ function SideNav({
                   : "border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               }`}
             >
-              <span>{PAGE_META[key].title}</span>
+              <span className="flex items-center gap-2.5">
+                <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+                {PAGE_META[key].title}
+              </span>
               {key === "admin" && (
                 <span className="inline-flex items-center justify-center rounded-full border border-border px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
                   Admin
@@ -316,7 +341,8 @@ function SideNav({
         </div>
         <button
           onClick={onSignOut}
-          className="mt-2 w-full rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted">
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted">
+          <LogOut className="h-3.5 w-3.5" />
           Sign out
         </button>
       </div>
@@ -365,10 +391,10 @@ function OverviewPage({ query, alerts, onAck }: { query: string; alerts: Alert[]
     <div className="space-y-5">
       <h2 className="text-xl font-bold text-foreground">KPI Summary Cards</h2>
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi value={products.length} label="Active SKUs Tracked" />
-        <Kpi value={alerts.length} label="Open Alerts" />
-        <Kpi value={nearExpiry} label="Batches Nearing Expiry" />
-        <Kpi value={0} suffix="s" label="Sync Delay" />
+        <Kpi value={products.length} label="Active SKUs Tracked" icon={Package} />
+        <Kpi value={alerts.length} label="Open Alerts" icon={Bell} />
+        <Kpi value={nearExpiry} label="Batches Nearing Expiry" icon={Clock} />
+        <Kpi value={0} suffix="s" label="Sync Delay" icon={RefreshCw} />
       </section>
 
       <section className="grid gap-5 lg:grid-cols-5">
@@ -448,11 +474,16 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
-function Kpi({ value, label, suffix }: { value: number; label: string; suffix?: string }) {
+function Kpi({ value, label, suffix, icon: Icon }: { value: number; label: string; suffix?: string; icon: LucideIcon }) {
   return (
     <div className="card-surface p-5 transition-colors hover:bg-muted/30">
-      <div className="font-display text-3xl font-semibold">
-        <CountUp to={value} suffix={suffix} />
+      <div className="flex items-center justify-between">
+        <div className="font-display text-3xl font-semibold">
+          <CountUp to={value} suffix={suffix} />
+        </div>
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
+          <Icon className="h-4 w-4" strokeWidth={2} />
+        </span>
       </div>
       <div className="mt-1 text-xs text-muted-foreground">{label}</div>
     </div>
@@ -639,10 +670,19 @@ function AlertsPage({ alerts, onAck }: { alerts: Alert[]; onAck: (id: string) =>
   );
 }
 
+const ALERT_ICONS: Record<AlertType, LucideIcon> = {
+  LOW_STOCK: TrendingDown,
+  SEASONAL_REORDER: Sun,
+  NEAR_EXPIRY: Clock,
+  VARIANCE: Scale,
+  PO_OVERDUE: Truck,
+};
+
 function AlertCard({ alert, onAck, compact = false }: { alert: Alert; onAck: (id: string) => void; compact?: boolean }) {
   const p = products.find(pp => pp.sku === alert.sku);
   const tag = { LOW_STOCK: "STANDARD", SEASONAL_REORDER: "SEASONAL", NEAR_EXPIRY: "FIFO", VARIANCE: "VARIANCE", PO_OVERDUE: "PO OVERDUE"}[alert.type as AlertType];
   const title = alert.batchId ? `${p?.name} — Batch ${alert.batchId}` : p?.name;
+  const Icon = ALERT_ICONS[alert.type as AlertType];
   const [acking, setAcking] = useState(false);
 
   const handleAck = () => {
@@ -658,8 +698,8 @@ function AlertCard({ alert, onAck, compact = false }: { alert: Alert; onAck: (id
       }`}
     >
       <div className="flex min-w-0 items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border bg-muted text-sm font-bold">
-          !
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border bg-muted text-muted-foreground">
+          <Icon className="h-4 w-4" strokeWidth={2} />
         </span>
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold">{title}</div>
@@ -696,17 +736,17 @@ function MyDayPage({ role, name, alerts }: { role: Role; name: string; alerts: A
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {isWarehouse ? (
           <>
-            <Kpi value={openPicks.length} label="Open Pick Tasks" />
-            <Kpi value={openPicks.filter(t => t.priority === "HIGH").length} label="High Priority" />
-            <Kpi value={inbound.length} label="Inbound Deliveries" />
-            <Kpi value={batches.filter(b => { const d = daysLeft(b.expirationDate); return d !== null && d <= 30; }).length} label="Lots Expiring ≤30d" />
+            <Kpi value={openPicks.length} label="Open Pick Tasks" icon={Boxes} />
+            <Kpi value={openPicks.filter(t => t.priority === "HIGH").length} label="High Priority" icon={AlertTriangle} />
+            <Kpi value={inbound.length} label="Inbound Deliveries" icon={Truck} />
+            <Kpi value={batches.filter(b => { const d = daysLeft(b.expirationDate); return d !== null && d <= 30; }).length} label="Lots Expiring ≤30d" icon={Clock} />
           </>
         ) : (
           <>
-            <Kpi value={openCounts.length} label="Counts Due Today" />
-            <Kpi value={variances.length} label="Variances Logged" />
-            <Kpi value={alerts.filter(a => a.type !== "NEAR_EXPIRY").length} label="ROP Breaches" />
-            <Kpi value={products.length} label="SKUs In Scope" />
+            <Kpi value={openCounts.length} label="Counts Due Today" icon={ClipboardList} />
+            <Kpi value={variances.length} label="Variances Logged" icon={Scale} />
+            <Kpi value={alerts.filter(a => a.type !== "NEAR_EXPIRY").length} label="ROP Breaches" icon={TrendingDown} />
+            <Kpi value={products.length} label="SKUs In Scope" icon={Package} />
           </>
         )}
       </section>
