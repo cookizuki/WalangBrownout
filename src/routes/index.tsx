@@ -16,7 +16,7 @@ import {
   TimeAgo, daysLeft, titleCase,
 } from "@/components/ui-bits";
 import { DraftPOAction } from "@/components/DraftPOAction";
-import { useOps, useAlerts } from "@/lib/ops-store";
+import { useOps, useAlerts, acknowledgeAlert } from "@/lib/ops-store";
 import { FIFOExceptionPopover } from "@/components/FIFOExceptionPopover";
 import { ReceivingEntryModal } from "@/components/ReceivingEntryModal";
 import { QuickActionMenu } from "@/components/QuickActionMenu";
@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { CommandPalette } from "@/components/CommandPalette";
 import { TxTypeBadge } from "@/lib/tx-type-styles";
 import { SalesOrdersPage } from "@/components/SalesOrdersPage";
+
 import wbLogo from "@/assets/WB LOGO.jpg";
 
 
@@ -77,7 +78,6 @@ function Dashboard() {
   const { account, ready, signOut } = useSession();
   const [tab, setTab] = useState<Tab>("overview");
   const [query, setQuery] = useState("");
-  const [acked, setAcked] = useState<string[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -88,9 +88,16 @@ function Dashboard() {
     if (account) setTab(ROLE_NAV[account.role][0]!);
   }, [account?.role]);
 
-  const allAlerts = useAlerts();
-  const alerts = allAlerts.filter(a => !acked.includes(a.id));
+  const alerts = useAlerts(); // already filtered against shared ack state
   const openAlerts = alerts.length;
+
+  const handleAckAlert = (id: string) => {
+    if (!account) return;
+    acknowledgeAlert(id, {
+      userId: Number(account.id.replace(/\D/g, "")) || 1,
+      userName: account.name,
+    });
+  };
 
   if (!ready || !account) {
     return (
@@ -201,13 +208,13 @@ function Dashboard() {
 
         <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6">
           {tab === "overview" && (
-            <OverviewPage query={query} alerts={alerts} onAck={id => setAcked(a => [...a, id])} />
+            <OverviewPage query={query} alerts={alerts} onAck={handleAckAlert} />
           )}
           {tab === "inventory" && (
             <InventoryPage query={query} canExport={account.role === "INVENTORY_STAFF"} />
           )}
           {tab === "batches" && <BatchesPage canAdjust={account.role !== "INVENTORY_STAFF"} />}
-          {tab === "alerts" && <AlertsPage alerts={alerts} onAck={id => setAcked(a => [...a, id])} />}
+          {tab === "alerts" && <AlertsPage alerts={alerts} onAck={handleAckAlert} />}
           {tab === "myday" && <MyDayPage role={account.role} name={account.name} alerts={alerts} />}
           {tab === "counts" && (
             <StockCountsPage mode={account.role === "WAREHOUSE_STAFF" ? "entry" : "review"} />

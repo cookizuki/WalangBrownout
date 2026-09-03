@@ -64,6 +64,8 @@ export interface Alert {
   message: string;
   status: AlertStatus;
   createdAt: string;
+  acknowledgedBy?: string;
+  acknowledgedAt?: string;
 }
 
 export const suppliers: Supplier[] = [

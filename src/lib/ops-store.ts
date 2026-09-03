@@ -57,6 +57,7 @@ interface OpsState {
   seasonalWindows: Record<string, { startMonth: number; endMonth: number }>;
   suppliers: Supplier[];
   locations: WarehouseLocation[];
+  ackedAlerts: Record<string, { userId: number; userName: string; at: string }>;
 }
 
 let state: OpsState = {
@@ -73,6 +74,7 @@ let state: OpsState = {
   ),
   suppliers: seedSuppliers.map(s => ({ ...s })),
   locations: seedLocations.map(l => ({ ...l })),
+  ackedAlerts: {},
 };
 
 const listeners = new Set<() => void>();
@@ -107,6 +109,23 @@ export function logAudit(userId: number, userName: string, action: string, targe
       ...state.auditLog,
     ],
   };
+}
+/**
+ * Records an alert acknowledgment in shared store state — visible to every
+ * role/session reading from this store, not just the tab that clicked it.
+ * Mirrors the Alert entity's AcknowledgedBy / AcknowledgedAt fields.
+ */
+export function acknowledgeAlert(alertId: string, actor: { userId: number; userName: string }) {
+  if (state.ackedAlerts[alertId]) return; // already acknowledged — no-op
+  state = {
+    ...state,
+    ackedAlerts: {
+      ...state.ackedAlerts,
+      [alertId]: { userId: actor.userId, userName: actor.userName, at: new Date().toISOString() },
+    },
+  };
+  logAudit(actor.userId, actor.userName, "Acknowledged alert", alertId);
+  emit();
 }
 
 /** Warehouse staff submits a physical count; variance logs an ADJUSTMENT tx. */
@@ -637,10 +656,10 @@ export function computeAlerts(s: Pick<OpsState, "products" | "batches" | "receiv
  * "run once at mount").
  */
 export function useAlerts(): Alert[] {
-  const { products, batches, receivingLines, counts } = useOps();
+  const { products, batches, receivingLines, counts, ackedAlerts } = useOps();
   return useMemo(
-    () => computeAlerts({ products, batches, receivingLines, counts }),
-    [products, batches, receivingLines, counts],
+    () => computeAlerts({ products, batches, receivingLines, counts }).filter(a => !ackedAlerts[a.id]),
+    [products, batches, receivingLines, counts, ackedAlerts],
   );
 }
 /**
