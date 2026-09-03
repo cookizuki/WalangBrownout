@@ -286,12 +286,15 @@ export function receiveDelivery(input: {
     expirationDate: input.expirationDate || undefined,
   };
 
+  const newQuantityReceived = line.quantityReceived + input.quantityReceived;
+  const isComplete = newQuantityReceived >= line.quantityOrdered;
+
   state = {
     ...state,
     batches: [newBatch, ...state.batches],
     receivingLines: state.receivingLines.map(r =>
       r.id === line.id
-        ? { ...r, quantityReceived: input.quantityReceived, status: "PUT_AWAY" as const }
+        ? { ...r, quantityReceived: newQuantityReceived, status: isComplete ? ("PUT_AWAY" as const) : ("ARRIVED" as const) }
         : r,
     ),
     transactions: [
@@ -432,8 +435,36 @@ export function addProduct(input: {
     safetyStock: Math.round(input.reorderPoint * 0.2),
   };
 
-  state = { ...state, products: [newProduct, ...state.products] };
+    state = { ...state, products: [newProduct, ...state.products] };
   logAudit(actor.userId, actor.userName, "Added product", `SKU: ${input.sku}`);
+  emit();
+}
+
+/** Administrator edits an existing SKU's catalog details. */
+export function updateProduct(sku: string, input: {
+  name: string; unitCost: number; reorderPoint: number;
+  leadTimeDays: number; abc: ABC; seasonalFlag: boolean;
+}, actor: { userId: number; userName: string }) {
+  if (!state.products.some(p => p.sku === sku)) return;
+
+  state = {
+    ...state,
+    products: state.products.map(p =>
+      p.sku === sku
+        ? {
+            ...p,
+            name: input.name,
+            unitCost: input.unitCost,
+            reorderPoint: input.reorderPoint,
+            leadTimeDays: input.leadTimeDays,
+            abc: input.abc,
+            seasonalFlag: input.seasonalFlag,
+            seasonalFactor: input.seasonalFlag ? (p.seasonalFactor ?? 2.0) : undefined,
+          }
+        : p,
+    ),
+  };
+  logAudit(actor.userId, actor.userName, "Updated product", `SKU: ${sku}`);
   emit();
 }
 
@@ -451,7 +482,30 @@ export function addSupplier(input: {
     landline: input.landline || undefined,
     tin: input.tin || undefined,
   };
-  state = { ...state, suppliers: [newSupplier, ...state.suppliers] };
+    state = { ...state, suppliers: [newSupplier, ...state.suppliers] };
+  emit();
+}
+
+/** Administrator edits an existing supplier's directory details. */
+export function updateSupplier(id: number, input: {
+  name: string; contact: string; contactRole?: string; address?: string; landline?: string; tin?: string;
+}) {
+  state = {
+    ...state,
+    suppliers: state.suppliers.map(s =>
+      s.id === id
+        ? {
+            ...s,
+            name: input.name,
+            contact: input.contact,
+            contactRole: input.contactRole || undefined,
+            address: input.address || undefined,
+            landline: input.landline || undefined,
+            tin: input.tin || undefined,
+          }
+        : s,
+    ),
+  };
   emit();
 }
 
@@ -466,7 +520,16 @@ export function addLocation(input: { zone: string; aisle: string; description: s
     code,
     description: input.description || `Zone ${input.zone} · Aisle ${input.aisle}`,
   };
-  state = { ...state, locations: [newLocation, ...state.locations] };
+    state = { ...state, locations: [newLocation, ...state.locations] };
+  emit();
+}
+
+/** Administrator edits a location's description — zone/aisle code stays fixed since batches reference the location by ID, not code. */
+export function updateLocationDescription(id: number, description: string) {
+  state = {
+    ...state,
+    locations: state.locations.map(l => (l.id === id ? { ...l, description } : l)),
+  };
   emit();
 }
 /**

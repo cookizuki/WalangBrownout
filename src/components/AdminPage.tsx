@@ -1,8 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { AnimatedItem } from "@/components/AnimatedList";
 import { FadeContent } from "@/components/FadeContent";
-import { addProduct, addSupplier, addLocation, useOps, resolvePendingPO, logAudit } from "@/lib/ops-store";
-import { money } from "@/lib/inventory-data";
+import { addProduct, updateProduct, addSupplier, updateSupplier, addLocation, updateLocationDescription, useOps, resolvePendingPO, logAudit } from "@/lib/ops-store";
+import { money, type ABC } from "@/lib/inventory-data";
 import { ProductFormModal } from "@/components/ProductFormModal";
 import { createAccount, DEMO_PASSWORD, listAccounts, ROLES, roleLabel, useSession, type Account, type Role } from "@/lib/auth";
 import { AuditLogPanel } from "@/components/AuditLogPanel";
@@ -24,9 +24,13 @@ export function AdminPage() {
   const [leaving, setLeaving] = useState<string[]>([]);
   const [showProductForm, setShowProductForm] = useState(false);
   const [showSupplierForm, setShowSupplierForm] = useState(false);
-  const { suppliers, locations } = useOps();
+  const { suppliers, locations, products: liveProducts } = useOps();
   const [editingUser, setEditingUser] = useState<Account | null>(null);
   const [previewingPO, setPreviewingPO] = useState<string | null>(null);
+  const [editingProduct, setEditingProduct] = useState<{ sku: string; name: string; unitCost: number; reorderPoint: number; leadTimeDays: number; abc: ABC; seasonalFlag: boolean } | null>(null);
+  const [editingSupplier, setEditingSupplier] = useState<typeof suppliers[number] | null>(null);
+  const [editingLocationId, setEditingLocationId] = useState<number | null>(null);
+  const [locationDraft, setLocationDraft] = useState("");
 
   useEffect(() => setAccounts(listAccounts()), []);
 
@@ -198,22 +202,46 @@ export function AdminPage() {
           </div>
         </div>
       </section>
-            {/* Section 3 — product catalog */}
+                  {/* Section 3 — product catalog */}
       <section className="space-y-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
           product catalog (System Administrator responsibility)
         </p>
-        <div className="card-surface flex items-center justify-between px-5 py-4">
-          <div>
-            <h2 className="text-lg font-semibold">Products</h2>
-            <p className="text-xs text-muted-foreground">Add new SKUs to the catalog</p>
+        <div className="card-surface overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4">
+            <div>
+              <h2 className="text-lg font-semibold">Products</h2>
+              <p className="text-xs text-muted-foreground">{liveProducts.length} SKUs in catalog</p>
+            </div>
+            <button
+              onClick={() => setShowProductForm(true)}
+              className="rounded-md bg-foreground px-4 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
+            >
+              + Add Product
+            </button>
           </div>
-          <button
-            onClick={() => setShowProductForm(true)}
-            className="rounded-md bg-foreground px-4 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
-          >
-            + Add Product
-          </button>
+          <ul className="divide-y divide-dashed divide-border border-t border-border">
+            {liveProducts.map(p => (
+              <li key={p.sku} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+                <div className="min-w-0">
+                  <div className="truncate font-medium">{p.name}</div>
+                  <div className="font-mono text-xs text-muted-foreground">
+                    {p.sku} · Class {p.abc} · {money(p.unitCost)}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setEditingProduct({
+                    sku: p.sku, name: p.name, unitCost: p.unitCost,
+                    reorderPoint: p.reorderPoint, leadTimeDays: p.leadTimeDays,
+                    abc: p.abc, seasonalFlag: p.seasonalFlag,
+                  })}
+                  className="shrink-0 text-xs font-medium underline underline-offset-4 hover:text-foreground/70"
+                >
+                  Edit
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
       {/* Section 3b — suppliers & locations */}
@@ -235,21 +263,29 @@ export function AdminPage() {
                 + Add Supplier
               </button>
             </div>
-                        <ul className="divide-y divide-dashed divide-border">
+              <ul className="divide-y divide-dashed divide-border">
               {suppliers.map(s => (
-                <li key={s.id} className="px-5 py-3 text-sm">
-                  <div className="font-medium">{s.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {s.contact}{s.contactRole ? ` · ${s.contactRole}` : ""}
-                  </div>
-                  {(s.address || s.landline) && (
-                    <div className="mt-0.5 text-[11px] text-muted-foreground">
-                      {s.address}{s.address && s.landline ? " · " : ""}{s.landline}
+                <li key={s.id} className="flex items-start justify-between gap-3 px-5 py-3 text-sm">
+                  <div className="min-w-0">
+                    <div className="font-medium">{s.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {s.contact}{s.contactRole ? ` · ${s.contactRole}` : ""}
                     </div>
-                  )}
-                  {s.tin && (
-                    <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">TIN: {s.tin}</div>
-                  )}
+                    {(s.address || s.landline) && (
+                      <div className="mt-0.5 text-[11px] text-muted-foreground">
+                        {s.address}{s.address && s.landline ? " · " : ""}{s.landline}
+                      </div>
+                    )}
+                    {s.tin && (
+                      <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">TIN: {s.tin}</div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setEditingSupplier(s)}
+                    className="shrink-0 text-xs font-medium underline underline-offset-4 hover:text-foreground/70"
+                  >
+                    Edit
+                  </button>
                 </li>
               ))}
             </ul>
@@ -268,9 +304,43 @@ export function AdminPage() {
             />
             <ul className="mt-4 divide-y divide-dashed divide-border">
               {locations.map(l => (
-                <li key={l.id} className="flex items-center justify-between py-2 text-sm">
-                  <span className="font-mono text-xs font-semibold">{l.code}</span>
-                  <span className="text-xs text-muted-foreground">{l.description}</span>
+                <li key={l.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                  <span className="shrink-0 font-mono text-xs font-semibold">{l.code}</span>
+                  {editingLocationId === l.id ? (
+                    <div className="flex flex-1 items-center gap-2">
+                      <input
+                        value={locationDraft}
+                        onChange={e => setLocationDraft(e.target.value)}
+                        autoFocus
+                        className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary"
+                      />
+                      <button
+                        onClick={() => {
+                          updateLocationDescription(l.id, locationDraft.trim() || l.description);
+                          setEditingLocationId(null);
+                        }}
+                        className="shrink-0 text-xs font-semibold text-foreground underline underline-offset-4"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingLocationId(null)}
+                        className="shrink-0 text-xs text-muted-foreground underline underline-offset-4"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-1 items-center justify-between gap-2">
+                      <span className="truncate text-xs text-muted-foreground">{l.description}</span>
+                      <button
+                        onClick={() => { setEditingLocationId(l.id); setLocationDraft(l.description); }}
+                        className="shrink-0 text-xs font-medium underline underline-offset-4 hover:text-foreground/70"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -285,6 +355,25 @@ export function AdminPage() {
             addSupplier(v);
             toast.success("Supplier added", { description: v.name });
             setShowSupplierForm(false);
+          }}
+        />
+      )}
+
+      {editingSupplier && (
+        <SupplierDirectoryForm
+          initial={{
+            name: editingSupplier.name,
+            contact: editingSupplier.contact,
+            contactRole: editingSupplier.contactRole ?? "",
+            address: editingSupplier.address ?? "",
+            landline: editingSupplier.landline ?? "",
+            tin: editingSupplier.tin ?? "",
+          }}
+          onClose={() => setEditingSupplier(null)}
+          onSave={v => {
+            updateSupplier(editingSupplier.id, v);
+            toast.success("Supplier updated", { description: v.name });
+            setEditingSupplier(null);
           }}
         />
       )}
@@ -303,6 +392,18 @@ export function AdminPage() {
             if (account) addProduct(v, { userId: Number(account.id.replace(/\D/g, "")) || 1, userName: account.name });
             toast.success("Product added", { description: `${v.sku} — ${v.name}` });
             setShowProductForm(false);
+          }}
+        />
+      )}
+
+      {editingProduct && (
+        <ProductFormModal
+          initial={editingProduct}
+          onClose={() => setEditingProduct(null)}
+          onSave={v => {
+            if (account) updateProduct(editingProduct.sku, v, { userId: Number(account.id.replace(/\D/g, "")) || 1, userName: account.name });
+            toast.success("Product updated", { description: `${editingProduct.sku} — ${v.name}` });
+            setEditingProduct(null);
           }}
         />
       )}

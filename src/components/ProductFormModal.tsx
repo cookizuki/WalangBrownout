@@ -50,7 +50,13 @@ export function ProductFormModal({
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <label className="block text-xs">
             <span className="font-semibold text-muted-foreground">SKU</span>
-            <input value={sku} onChange={e => setSku(e.target.value)} placeholder="ACU-014" className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+            <input
+              value={sku}
+              onChange={e => setSku(e.target.value)}
+              placeholder="ACU-014"
+              disabled={!!initial}
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
+            />
           </label>
           <label className="block text-xs">
             <span className="font-semibold text-muted-foreground">Product Name</span>

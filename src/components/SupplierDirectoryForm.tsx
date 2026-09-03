@@ -5,17 +5,17 @@ export interface SupplierFormValues {
 }
 
 export function SupplierDirectoryForm({
-  onClose, onSave,
-}: { onClose: () => void; onSave: (v: SupplierFormValues) => void }) {
-  const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
-  const [contactRole, setContactRole] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [landline, setLandline] = useState("");
+  onClose, onSave, initial,
+}: { onClose: () => void; onSave: (v: SupplierFormValues) => void; initial?: Partial<SupplierFormValues> }) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [contact, setContact] = useState(initial?.contact ?? "");
+  const [contactRole, setContactRole] = useState(initial?.contactRole ?? "");
+  const [email, setEmail] = useState(initial?.email ?? "");
+  const [phone, setPhone] = useState(initial?.phone ?? "");
+  const [address, setAddress] = useState(initial?.address ?? "");
+  const [landline, setLandline] = useState(initial?.landline ?? "");
   const [error, setError] = useState("");
-  const [tin, setTin] = useState("");
+  const [tin, setTin] = useState(initial?.tin ?? "");
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +31,7 @@ export function SupplierDirectoryForm({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 px-4" onClick={onClose}>
       <form onSubmit={submit} onClick={e => e.stopPropagation()} className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-xl">
         <div className="flex items-start justify-between gap-4">
-          <h2 className="font-display text-lg font-semibold">Add Supplier</h2>
+          <h2 className="font-display text-lg font-semibold">{initial ? "Edit Supplier" : "Add Supplier"}</h2>
           <button type="button" onClick={onClose} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-md border border-border text-sm text-muted-foreground hover:bg-muted">✕</button>
         </div>
 
@@ -86,7 +86,7 @@ export function SupplierDirectoryForm({
         {error && <p className="mt-3 text-xs font-medium text-danger">{error}</p>}
 
         <div className="mt-5 flex gap-2">
-          <button type="submit" className="flex-1 rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background hover:opacity-90">Save supplier</button>
+          <button type="submit" className="flex-1 rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background hover:opacity-90">{initial ? "Save changes" : "Save supplier"}</button>
           <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium hover:bg-muted">Cancel</button>
         </div>
       </form>
