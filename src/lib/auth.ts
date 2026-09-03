@@ -13,6 +13,7 @@ export interface Account {
   password: string;
   role: Role;
   createdAt: string;
+  status?: "Active" | "Inactive";
 }
 
 /** Shared password for the seeded demo accounts. */
@@ -88,7 +89,10 @@ export function createAccount(input: { name: string; email: string; username?: s
   return acct;
 }
 
-export function updateAccount(id: string, updates: { name?: string; email?: string; role?: Role }): Account | null {
+export function updateAccount(
+  id: string,
+  updates: { name?: string; email?: string; role?: Role; status?: "Active" | "Inactive" },
+): Account | null {
   const accounts = listAccounts();
   const idx = accounts.findIndex(a => a.id === id);
   if (idx === -1) return null;
@@ -98,6 +102,7 @@ export function updateAccount(id: string, updates: { name?: string; email?: stri
     ...(updates.name ? { name: updates.name.trim() } : {}),
     ...(updates.email ? { email: updates.email.trim().toLowerCase() } : {}),
     ...(updates.role ? { role: updates.role } : {}),
+    ...(updates.status ? { status: updates.status } : {}),
   };
 
   const next = [...accounts];
@@ -157,5 +162,8 @@ export function readRawSessionId(): string | null {
 /** Credential check for the demo login form. Returns the account or null. */
 export function authenticate(email: string, password: string): Account | null {
   const e = email.trim().toLowerCase();
-  return listAccounts().find(a => a.email === e && a.password === password) ?? null;
+  const match = listAccounts().find(a => a.email === e && a.password === password);
+  if (!match) return null;
+  if (match.status === "Inactive") return null;
+  return match;
 }

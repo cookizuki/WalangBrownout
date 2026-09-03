@@ -7,12 +7,13 @@ export function EditUserModal({
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [role, setRole] = useState<Role>(user.role);
+  const [status, setStatus] = useState<"Active" | "Inactive">(user.status ?? "Active");
   const [error, setError] = useState("");
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) return setError("Name and email are required.");
-    const updated = updateAccount(user.id, { name, email, role });
+    const updated = updateAccount(user.id, { name, email, role, status });
     if (updated) onSaved(updated);
   };
 
@@ -53,6 +54,33 @@ export function EditUserModal({
               );
             })}
           </div>
+        </div>
+
+        <div className="mt-4">
+          <p className="text-xs font-semibold text-muted-foreground">Account Status</p>
+          <div className="mt-2 flex gap-2">
+            {(["Active", "Inactive"] as const).map(s => (
+              <button
+                type="button"
+                key={s}
+                onClick={() => setStatus(s)}
+                className={`flex-1 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                  status === s
+                    ? s === "Active"
+                      ? "border-success/50 bg-success/10 text-success"
+                      : "border-danger/50 bg-danger/10 text-danger"
+                    : "border-border text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+          {status === "Inactive" && (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Inactive users cannot log in, even with correct credentials.
+            </p>
+          )}
         </div>
 
         {error && <p className="mt-3 text-xs font-medium text-danger">{error}</p>}

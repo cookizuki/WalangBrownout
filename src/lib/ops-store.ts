@@ -229,13 +229,22 @@ export function reportAdjustment(input: {
   emit();
 }
 
+/** True if a PO for this SKU is already sitting in the Admin approval queue. */
+export function hasPendingPO(sku: string): boolean {
+  return state.pendingPOs.some(po => po.sku === sku);
+}
+
 /**
  * Inventory Staff drafts a PO from a Reorder Review suggestion — it lands
- * directly in the Admin approval queue, live.
+ * directly in the Admin approval queue, live. Refuses to create a second
+ * pending PO for a SKU that already has one queued — returns false so the
+ * caller can surface why nothing happened.
  */
-export function draftPO(input: { sku: string; quantity: number; requestedBy: string }) {
+export function draftPO(input: { sku: string; quantity: number; requestedBy: string }): boolean {
+  if (hasPendingPO(input.sku)) return false;
+
   const p = state.products.find(pp => pp.sku === input.sku);
-  if (!p) return;
+  if (!p) return false;
   const supplier = state.suppliers.find(s => s.id === p.supplierId);
 
   const po: PendingPO = {
@@ -252,6 +261,7 @@ export function draftPO(input: { sku: string; quantity: number; requestedBy: str
 
   state = { ...state, pendingPOs: [po, ...state.pendingPOs] };
   emit();
+  return true;
 }
 
 /** Admin approves or rejects a pending PO — removes it from the queue. */

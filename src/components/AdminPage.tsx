@@ -82,8 +82,13 @@ export function AdminPage() {
           onClose={() => setEditingUser(null)}
           onSaved={updated => {
             setAccounts(a => a.map(u => (u.id === updated.id ? updated : u)));
-            toast.success("User updated", { description: `${updated.name} — ${roleLabel(updated.role)}` });
-            logAudit(Number(account.id.replace(/\D/g, "")) || 1, account.name, "Updated user", `${updated.name} → ${roleLabel(updated.role)}`);
+            toast.success("User updated", { description: `${updated.name} — ${roleLabel(updated.role)} · ${updated.status ?? "Active"}` });
+            logAudit(
+              Number(account.id.replace(/\D/g, "")) || 1,
+              account.name,
+              updated.status === "Inactive" ? "Deactivated user" : "Updated user",
+              `${updated.name} → ${roleLabel(updated.role)}, ${updated.status ?? "Active"}`,
+            );
             setEditingUser(null);
           }}
         />
