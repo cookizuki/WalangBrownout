@@ -248,7 +248,7 @@ function SideNav({
       className={
         mobile
           ? "flex h-full w-full flex-col border-r border-border bg-surface"
-          : "hidden w-60 shrink-0 flex-col border-r border-border bg-surface md:flex"
+          : "hidden w-60 shrink-0 flex-col border-r border-border bg-surface md:sticky md:top-0 md:flex md:h-screen md:overflow-y-auto"
       }
     >
       <div className="px-5 py-5">
