@@ -304,7 +304,12 @@ export function receiveDelivery(input: {
     batches: [newBatch, ...state.batches],
     receivingLines: state.receivingLines.map(r =>
       r.id === line.id
-        ? { ...r, quantityReceived: newQuantityReceived, status: isComplete ? ("PUT_AWAY" as const) : ("ARRIVED" as const) }
+        ? {
+            ...r,
+            quantityReceived: newQuantityReceived,
+            status: isComplete ? ("PUT_AWAY" as const) : ("ARRIVED" as const),
+            receivedDate: isComplete ? new Date().toISOString().slice(0, 10) : r.receivedDate,
+          }
         : r,
     ),
     transactions: [
@@ -638,6 +643,88 @@ export function deriveSalesOrders(pickTasks: PickTask[]): SalesOrder[] {
 export function useSalesOrders(): SalesOrder[] {
   const { pickTasks } = useOps();
   return useMemo(() => deriveSalesOrders(pickTasks), [pickTasks]);
+}
+
+export interface SupplierPerformance {
+  supplierId: number;
+  supplierName: string;
+  totalDeliveries: number;
+  onTimeCount: number;
+  lateCount: number;
+  onTimeRate: number; // 0–100
+  avgDaysLate: number; // average over late deliveries only; 0 if none
+  currentlyOverdue: number;
+}
+
+/**
+ * Aggregates completed (PUT_AWAY) receiving lines per supplier into an
+ * on-time delivery rate — the Purchasing Manager's supplier reliability
+ * view. Only lines with a recorded `receivedDate` count toward history;
+ * "currentlyOverdue" separately counts open lines already past their
+ * expected date (same logic as the PO_OVERDUE alert), so a supplier's
+ * card reflects both track record and what's live right now.
+ */
+export function computeSupplierPerformance(
+  receivingLines: ReceivingLine[],
+  suppliers: Supplier[],
+): SupplierPerformance[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const bySupplier = new Map<number, ReceivingLine[]>();
+  for (const r of receivingLines) {
+    const list = bySupplier.get(r.supplierId);
+    if (list) list.push(r);
+    else bySupplier.set(r.supplierId, [r]);
+  }
+
+  return suppliers
+    .map(s => {
+      const lines = bySupplier.get(s.id) ?? [];
+      const completed = lines.filter(r => r.status === "PUT_AWAY" && r.receivedDate);
+
+      let onTime = 0, lateCount = 0, lateDaysSum = 0;
+      for (const r of completed) {
+        const expected = new Date(r.expectedDate);
+        expected.setHours(0, 0, 0, 0);
+        const received = new Date(r.receivedDate!);
+        received.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((received.getTime() - expected.getTime()) / 86400000);
+        if (diffDays > 0) {
+          lateCount++;
+          lateDaysSum += diffDays;
+        } else {
+          onTime++;
+        }
+      }
+
+      const currentlyOverdue = lines.filter(r => {
+        if (r.status === "PUT_AWAY") return false;
+        if (r.quantityReceived >= r.quantityOrdered) return false;
+        const expected = new Date(r.expectedDate);
+        expected.setHours(0, 0, 0, 0);
+        return expected.getTime() < today.getTime();
+      }).length;
+
+      return {
+        supplierId: s.id,
+        supplierName: s.name,
+        totalDeliveries: completed.length,
+        onTimeCount: onTime,
+        lateCount,
+        onTimeRate: completed.length ? Math.round((onTime / completed.length) * 100) : 0,
+        avgDaysLate: lateCount ? Math.round((lateDaysSum / lateCount) * 10) / 10 : 0,
+        currentlyOverdue,
+      };
+    })
+    .filter(p => p.totalDeliveries > 0 || p.currentlyOverdue > 0)
+    .sort((a, b) => a.onTimeRate - b.onTimeRate); // worst performers first
+}
+
+/** Live supplier performance — recomputes whenever receiving lines or suppliers change. */
+export function useSupplierPerformance(): SupplierPerformance[] {
+  const { receivingLines, suppliers } = useOps();
+  return useMemo(() => computeSupplierPerformance(receivingLines, suppliers), [receivingLines, suppliers]);
 }
 /**
  * Computes all alerts from the CURRENT live store state — recalculated

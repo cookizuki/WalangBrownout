@@ -314,6 +314,7 @@ export interface ReceivingLine {
   expectedDate: string;
   locationId: number;
   status: "IN_TRANSIT" | "ARRIVED" | "PUT_AWAY";
+  receivedDate?: string;
 }
 
 export interface CycleCount {
@@ -347,8 +348,15 @@ export const pickTasks: PickTask[] = [
 export const receivingLines: ReceivingLine[] = [
   { id: "RC-7701", poNumber: "PO-3320", sku: "ACU-014", supplierId: 1, quantityOrdered: 300, quantityReceived: 0, expectedDate: "2026-08-19", locationId: 1, status: "IN_TRANSIT" },
   { id: "RC-7702", poNumber: "PO-3321", sku: "APU-100", supplierId: 2, quantityOrdered: 200, quantityReceived: 200, expectedDate: "2026-08-17", locationId: 2, status: "ARRIVED" },
-  { id: "RC-7703", poNumber: "PO-3318", sku: "FAN-050", supplierId: 1, quantityOrdered: 80, quantityReceived: 80, expectedDate: "2026-08-14", locationId: 1, status: "PUT_AWAY" },
+  { id: "RC-7703", poNumber: "PO-3318", sku: "FAN-050", supplierId: 1, quantityOrdered: 80, quantityReceived: 80, expectedDate: "2026-08-14", locationId: 1, status: "PUT_AWAY", receivedDate: "2026-08-15" },
   { id: "RC-7704", poNumber: "PO-3322", sku: "THM-201", supplierId: 3, quantityOrdered: 60, quantityReceived: 0, expectedDate: "2026-08-22", locationId: 3, status: "IN_TRANSIT" },
+  // --- Historical completed deliveries, seeded for Supplier Performance reporting ---
+  { id: "RC-7690", poNumber: "PO-3305", sku: "ACU-014", supplierId: 1, quantityOrdered: 200, quantityReceived: 200, expectedDate: "2026-06-10", locationId: 1, status: "PUT_AWAY", receivedDate: "2026-06-10" },
+  { id: "RC-7695", poNumber: "PO-3310", sku: "ACU-014", supplierId: 1, quantityOrdered: 150, quantityReceived: 150, expectedDate: "2026-07-01", locationId: 1, status: "PUT_AWAY", receivedDate: "2026-07-05" },
+  { id: "RC-7685", poNumber: "PO-3300", sku: "APU-100", supplierId: 2, quantityOrdered: 180, quantityReceived: 180, expectedDate: "2026-05-20", locationId: 2, status: "PUT_AWAY", receivedDate: "2026-05-19" },
+  { id: "RC-7688", poNumber: "PO-3303", sku: "APU-100", supplierId: 2, quantityOrdered: 220, quantityReceived: 220, expectedDate: "2026-06-25", locationId: 2, status: "PUT_AWAY", receivedDate: "2026-06-24" },
+  { id: "RC-7692", poNumber: "PO-3308", sku: "THM-201", supplierId: 3, quantityOrdered: 80, quantityReceived: 80, expectedDate: "2026-06-01", locationId: 3, status: "PUT_AWAY", receivedDate: "2026-06-08" },
+  { id: "RC-7696", poNumber: "PO-3312", sku: "SEN-011", supplierId: 3, quantityOrdered: 60, quantityReceived: 60, expectedDate: "2026-07-10", locationId: 3, status: "PUT_AWAY", receivedDate: "2026-07-09" },
 ];
 
 export const cycleCounts: CycleCount[] = [

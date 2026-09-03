@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 const VARS = [
-  "--danger", "--foreground", "--muted-foreground", "--border",
+  "--danger", "--success", "--warning", "--foreground", "--muted-foreground", "--border",
   "--abc-a", "--abc-b", "--abc-c",
 ] as const;
 type VarName = (typeof VARS)[number];

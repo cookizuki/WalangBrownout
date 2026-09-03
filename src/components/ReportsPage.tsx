@@ -3,9 +3,10 @@ import {
   Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer,
   Tooltip, XAxis, YAxis,
 } from "recharts";
-import { useOps } from "@/lib/ops-store";
+import { useOps, useSupplierPerformance } from "@/lib/ops-store";
 import { money } from "@/lib/inventory-data";
 import { useChartColors } from "@/hooks/use-chart-colors";
+import { Th, Td } from "@/components/ui-bits";
 
 const MONTH_LABELS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -30,8 +31,26 @@ function ChartTooltip({ active, payload, label }: any) {
   );
 }
 
+function SupplierTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const s = payload[0].payload;
+  return (
+    <div className="card-surface px-3 py-2 text-xs shadow-lg">
+      <p className="font-semibold">{s.supplierName}</p>
+      <p className="text-muted-foreground">
+        On-time: <span className="font-mono text-foreground">{s.onTimeRate}%</span>
+      </p>
+      <p className="text-muted-foreground">
+        {s.onTimeCount} on time · {s.lateCount} late{s.avgDaysLate ? ` (avg ${s.avgDaysLate}d)` : ""}
+      </p>
+      {s.currentlyOverdue > 0 && <p className="text-danger">{s.currentlyOverdue} currently overdue</p>}
+    </div>
+  );
+}
+
 export function ReportsPage() {
   const { transactions, products } = useOps();
+  const supplierPerf = useSupplierPerformance();
   const c = useChartColors();
 
   const productLookup = useMemo(
@@ -176,6 +195,86 @@ export function ReportsPage() {
             <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: c["--abc-c"] }} /> Class C</span>
             <span className="ml-auto normal-case tracking-normal">Consistently high-volume B/C items may be candidates for reclassification to A</span>
           </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Supplier delivery performance — on-time rate from completed receiving lines, Purchasing Manager view
+        </p>
+        <div className="card-surface overflow-hidden">
+          <div className="border-b border-border px-5 py-4">
+            <h2 className="text-lg font-semibold">Supplier Reliability</h2>
+          </div>
+          <div className="px-3 py-4">
+            {supplierPerf.length === 0 ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">No completed deliveries recorded yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={Math.max(180, supplierPerf.length * 56)}>
+                <BarChart
+                  data={supplierPerf}
+                  layout="vertical"
+                  margin={{ top: 4, right: 32, left: 8, bottom: 4 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke={c["--border"]} horizontal={false} />
+                  <XAxis
+                    type="number"
+                    domain={[0, 100]}
+                    tickFormatter={v => `${v}%`}
+                    tick={{ fill: c["--muted-foreground"], fontSize: 11 }}
+                    axisLine={{ stroke: c["--border"] }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="supplierName"
+                    tick={{ fill: c["--foreground"], fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={160}
+                  />
+                  <Tooltip content={<SupplierTooltip />} cursor={{ fill: c["--border"], opacity: 0.3 }} />
+                  <Bar dataKey="onTimeRate" name="On-time rate" radius={[0, 6, 6, 0]} maxBarSize={28}>
+                    {supplierPerf.map(s => (
+                      <Cell
+                        key={s.supplierId}
+                        fill={s.onTimeRate >= 90 ? c["--success"] : s.onTimeRate >= 70 ? c["--warning"] : c["--danger"]}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          <div className="overflow-x-auto border-t border-border">
+            <table className="w-full min-w-160 text-sm">
+              <thead className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
+                <tr className="border-b border-border">
+                  <Th>Supplier</Th><Th>Deliveries</Th><Th>On Time</Th>
+                  <Th>Late</Th><Th>Avg Days Late</Th><Th>Currently Overdue</Th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-dashed divide-border">
+                {supplierPerf.map(s => (
+                  <tr key={s.supplierId} className="hover:bg-muted/40">
+                    <Td className="font-medium">{s.supplierName}</Td>
+                    <Td className="font-mono">{s.totalDeliveries}</Td>
+                    <Td className="font-mono text-success">{s.onTimeCount}</Td>
+                    <Td className="font-mono text-danger">{s.lateCount}</Td>
+                    <Td className="font-mono text-muted-foreground">{s.avgDaysLate ? `${s.avgDaysLate}d` : "—"}</Td>
+                    <Td className={s.currentlyOverdue > 0 ? "font-mono font-semibold text-danger" : "font-mono text-muted-foreground"}>
+                      {s.currentlyOverdue}
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="border-t border-border px-5 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">
+            On-time rate is computed only from fully received (Put Away) lines · green ≥90% · amber 70–89% · red &lt;70%
+          </p>
         </div>
       </div>
     </div>
