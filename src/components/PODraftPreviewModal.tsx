@@ -27,11 +27,13 @@ export function PODraftPreviewModal({
   data: PODraftPreviewData;
   onBack: () => void;
   onConfirm: () => void;
-  onReject?: () => void;
+  onReject?: (reason: string) => void;
   mode?: "draft" | "approval";
 }) {
   const [shown, setShown] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [showRejectField, setShowRejectField] = useState(false);
 
   const draftNumber =
     data.poNumber ??
@@ -74,21 +76,25 @@ export function PODraftPreviewModal({
 
   const handleConfirm = () => {
     if (submitting) return;
-
     setSubmitting(true);
-
     window.setTimeout(() => {
       onConfirm();
     }, 450);
   };
 
-  const handleReject = () => {
+  // First click reveals the required reason field; second click (with a
+  // non-empty reason) actually submits the rejection.
+  const handleRejectClick = () => {
     if (submitting) return;
+    if (!showRejectField) {
+      setShowRejectField(true);
+      return;
+    }
+    if (!rejectReason.trim()) return;
 
     setSubmitting(true);
-
     window.setTimeout(() => {
-      onReject?.();
+      onReject?.(rejectReason.trim());
     }, 450);
   };
 
@@ -312,6 +318,27 @@ export function PODraftPreviewModal({
           </div>
         </div>
 
+        {/* Reject reason (approval mode only, revealed on first Reject click) */}
+        {mode === "approval" && showRejectField && (
+          <div className="border-t border-border px-6 py-4">
+            <label className="block text-xs">
+              <span className="font-semibold text-danger">
+                Reason for rejection (required)
+              </span>
+
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="e.g. Unit price higher than last agreed rate"
+                rows={2}
+                autoFocus
+                disabled={submitting}
+                className="mt-1.5 w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-danger disabled:opacity-60"
+              />
+            </label>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex gap-2 border-t border-border px-6 py-4">
           {mode === "approval" ? (
@@ -319,18 +346,22 @@ export function PODraftPreviewModal({
               {/* REJECT */}
               <button
                 type="button"
-                onClick={handleReject}
-                disabled={submitting}
+                onClick={handleRejectClick}
+                disabled={submitting || (showRejectField && !rejectReason.trim())}
                 className="flex-1 rounded-lg border border-danger/40 px-4 py-2.5 text-sm font-medium text-danger transition-colors hover:bg-danger/10 focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {submitting ? "Processing…" : "Reject"}
+                {submitting
+                  ? "Processing…"
+                  : showRejectField
+                    ? "Confirm Rejection"
+                    : "Reject"}
               </button>
 
               {/* APPROVE */}
               <button
                 type="button"
                 onClick={handleConfirm}
-                disabled={submitting}
+                disabled={submitting || showRejectField}
                 className="flex-1 rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {submitting ? "Processing…" : "Approve"}

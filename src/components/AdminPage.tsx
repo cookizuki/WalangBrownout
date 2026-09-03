@@ -123,9 +123,9 @@ export function AdminPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3">
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-success">
+                      <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold ${a.status === "Inactive" ? "text-danger" : "text-success"}`}>
                         <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                        Active
+                        {a.status === "Inactive" ? "Inactive" : "Active"}
                       </span>
                     </td>
                     <td className="px-5 py-3">
@@ -438,20 +438,18 @@ export function AdminPage() {
         onBack={() => {
           setPreviewingPO(null);
         }}
-
-        onReject={() => {
-          resolvePO(po.id, "Rejected");
-
-          if (account) {
-            logAudit(
-              Number(account.id.replace(/\D/g, "")) || 1,
-              account.name,
-              "Rejected purchase order",
-              po.id
-            );
-          }
-
-          setPreviewingPO(null);
+         onReject={(reason) => {
+              resolvePO(po.id, "Rejected");
+              if (account) {
+                logAudit(
+                  Number(account.id.replace(/\D/g, "")) || 1,
+                  account.name,
+                  "Rejected purchase order",
+                  `${po.id} — Reason: ${reason ?? "Not specified"}`,
+                );
+              }
+              toast.error("Purchase order rejected", { description: reason });
+              setPreviewingPO(null);
         }}
 
         onConfirm={() => {
