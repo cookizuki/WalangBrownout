@@ -14,6 +14,7 @@ import {
   products as seedProducts,
   suppliers as seedSuppliers,
   locations as seedLocations,
+  purchaseOrders,
   type Supplier,
   type WarehouseLocation,
   type ABC,
@@ -758,6 +759,59 @@ export function usePurchaseOrderStatuses(orders: PurchaseOrder[]) {
   return useMemo(
     () => orders.map(po => ({ ...po, ...derivePOStatus(po, receivingLines) })),
     [orders, receivingLines],
+  );
+}
+export interface PurchaseHistoryEntry {
+  date: string;
+  poNumber: string;
+  supplierName: string;
+  quantityReceived: number;
+  unitCost: number;
+  totalCost: number;
+  costSource: "po" | "estimated";
+}
+
+/**
+ * Per-SKU purchase history: every completed receiving line for a product,
+ * newest first. Unit cost comes from the matching Purchase Order record
+ * when one exists; historical receiving lines seeded without a PO fall
+ * back to the product's current catalog cost, clearly flagged as
+ * estimated rather than presented as an exact historical price.
+ */
+export function derivePurchaseHistory(
+  sku: string,
+  receivingLines: ReceivingLine[],
+  purchaseOrders: PurchaseOrder[],
+  suppliers: Supplier[],
+  products: Product[],
+): PurchaseHistoryEntry[] {
+  const product = products.find(p => p.sku === sku);
+
+  return receivingLines
+    .filter(r => r.sku === sku && r.quantityReceived > 0)
+    .map(r => {
+      const po = purchaseOrders.find(p => p.id === r.poNumber);
+      const supplier = suppliers.find(s => s.id === r.supplierId);
+      const unitCost = po?.unitCost ?? product?.unitCost ?? 0;
+      return {
+        date: r.receivedDate ?? r.expectedDate,
+        poNumber: r.poNumber,
+        supplierName: supplier?.name ?? "Unknown supplier",
+        quantityReceived: r.quantityReceived,
+        unitCost,
+        totalCost: unitCost * r.quantityReceived,
+        costSource: (po ? "po" : "estimated") as "po" | "estimated",
+      };
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+/** Live purchase history for one SKU, recomputed whenever receiving/PO data changes. */
+export function usePurchaseHistory(sku: string): PurchaseHistoryEntry[] {
+  const { receivingLines, products, suppliers } = useOps();
+  return useMemo(
+    () => derivePurchaseHistory(sku, receivingLines, purchaseOrders, suppliers, products),
+    [sku, receivingLines, products, suppliers],
   );
 }
 /**

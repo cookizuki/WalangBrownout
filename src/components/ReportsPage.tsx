@@ -7,6 +7,7 @@ import { useOps, useSupplierPerformance } from "@/lib/ops-store";
 import { money } from "@/lib/inventory-data";
 import { useChartColors } from "@/hooks/use-chart-colors";
 import { Th, Td } from "@/components/ui-bits";
+import { PurchaseHistoryPanel } from "@/components/PurchaseHistoryPanel";
 
 const MONTH_LABELS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -271,11 +272,16 @@ export function ReportsPage() {
               </tbody>
             </table>
           </div>
-
           <p className="border-t border-border px-5 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">
             On-time rate is computed only from fully received (Put Away) lines · green ≥90% · amber 70–89% · red &lt;70%
           </p>
         </div>
+      </div>
+      <div className="space-y-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Purchase history — per-SKU record of what was bought, from whom, and at what price
+        </p>
+        <PurchaseHistoryPanel />
       </div>
     </div>
   );
