@@ -333,7 +333,7 @@ export interface PurchaseOrder {
   sku: string;
   quantity: number;
   unitCost: number;
-  status: "DRAFT" | "SUBMITTED" | "APPROVED" | "RECEIVED";
+  status: "DRAFT" | "SUBMITTED" | "APPROVED" | "PARTIALLY_RECEIVED" | "RECEIVED";
   createdAt: string;
 }
 

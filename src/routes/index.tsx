@@ -16,7 +16,7 @@ import {
   TimeAgo, daysLeft, titleCase,
 } from "@/components/ui-bits";
 import { DraftPOAction } from "@/components/DraftPOAction";
-import { useOps, useAlerts, acknowledgeAlert } from "@/lib/ops-store";
+import { useOps, useAlerts, acknowledgeAlert, usePurchaseOrderStatuses } from "@/lib/ops-store";
 import { FIFOExceptionPopover } from "@/components/FIFOExceptionPopover";
 import { ReceivingEntryModal } from "@/components/ReceivingEntryModal";
 import { QuickActionMenu } from "@/components/QuickActionMenu";
@@ -832,7 +832,8 @@ function MyDayPage({ role, name, alerts }: { role: Role; name: string; alerts: A
 
 function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
 
-  const { products: liveProducts, suppliers: liveSuppliers} = useOps();
+  const { products: liveProducts, suppliers: liveSuppliers } = useOps();
+  const livePOs = usePurchaseOrderStatuses(purchaseOrders);
   const rows = liveProducts
     .map(p => {
       const qty = onHand(p.sku);
@@ -902,19 +903,28 @@ function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
         <SectionLabel>Purchase orders already raised</SectionLabel>
         <Panel title="Open Purchase Orders">
           <ul className="divide-y divide-dashed divide-border">
-            {purchaseOrders.map(po => {
+            {livePOs.map(po => {
               const p = products.find(pp => pp.sku === po.sku);
               const s = liveSuppliers.find(su => su.id === po.supplierId);
+              const badgeCls =
+                po.effectiveStatus === "RECEIVED" ? "border-success/40 text-success"
+                : po.effectiveStatus === "PARTIALLY_RECEIVED" ? "border-warning/50 text-warning"
+                : "border-border text-muted-foreground";
               return (
                 <li key={po.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm">
                   <div className="min-w-0">
                     <div className="truncate font-medium">{po.id} · {p?.name}</div>
                     <div className="text-xs text-muted-foreground">
                       {s?.name} · {po.quantity} pcs · {money(po.quantity * po.unitCost)}
+                      {po.effectiveStatus === "PARTIALLY_RECEIVED" && (
+                        <span className="ml-2 font-mono text-warning">
+                          {po.receivedQty}/{po.quantity} received
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <span className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground">
-                    {titleCase(po.status)}
+                  <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${badgeCls}`}>
+                    {titleCase(po.effectiveStatus)}
                   </span>
                 </li>
               );

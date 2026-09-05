@@ -22,6 +22,7 @@ import {
   type PendingPO,
   type PickTask,
   type Product,
+  type PurchaseOrder,
   type ReceivingLine,
   type TxLog,
   type Priority,
@@ -725,6 +726,39 @@ export function computeSupplierPerformance(
 export function useSupplierPerformance(): SupplierPerformance[] {
   const { receivingLines, suppliers } = useOps();
   return useMemo(() => computeSupplierPerformance(receivingLines, suppliers), [receivingLines, suppliers]);
+}
+
+/**
+ * Derives a PO's real status from its actual receiving line(s), instead of
+ * trusting a status field that never gets touched after seeding. A PO is
+ * "partially received" the moment any but not all of its ordered quantity
+ * has arrived — the one state the static seed data can't express.
+ */
+export function derivePOStatus(
+  po: PurchaseOrder,
+  receivingLines: ReceivingLine[],
+): { effectiveStatus: PurchaseOrder["status"]; receivedQty: number; remainingQty: number } {
+  const matching = receivingLines.filter(r => r.poNumber === po.id);
+
+  if (matching.length === 0) {
+    return { effectiveStatus: po.status, receivedQty: 0, remainingQty: po.quantity };
+  }
+
+  const receivedQty = Math.min(po.quantity, matching.reduce((sum, r) => sum + r.quantityReceived, 0));
+  const remainingQty = Math.max(0, po.quantity - receivedQty);
+
+  if (receivedQty === 0) return { effectiveStatus: po.status, receivedQty, remainingQty };
+  if (remainingQty === 0) return { effectiveStatus: "RECEIVED", receivedQty, remainingQty };
+  return { effectiveStatus: "PARTIALLY_RECEIVED", receivedQty, remainingQty };
+}
+
+/** Live PO list enriched with real status/progress, recomputed whenever receiving lines change. */
+export function usePurchaseOrderStatuses(orders: PurchaseOrder[]) {
+  const { receivingLines } = useOps();
+  return useMemo(
+    () => orders.map(po => ({ ...po, ...derivePOStatus(po, receivingLines) })),
+    [orders, receivingLines],
+  );
 }
 /**
  * Computes all alerts from the CURRENT live store state — recalculated
