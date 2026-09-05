@@ -318,6 +318,7 @@ export function PurchaseOrderApprovalsPage() {
           supplierContact: matchedSupplier
             ? `${matchedSupplier.contact}${matchedSupplier.contactRole ? ` · ${matchedSupplier.contactRole}` : ""}`
             : "—",
+          supplierAddress: matchedSupplier?.address,
           supplierTin: matchedSupplier?.tin,
           quantity: po.quantity,
           unitCost: po.totalCost / po.quantity,

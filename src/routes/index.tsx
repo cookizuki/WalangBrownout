@@ -880,7 +880,7 @@ function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
                     </Td>
                     <Td className="font-mono">{p.reorderQuantity}</Td>
                     <Td className="font-mono text-xs">{money(p.reorderQuantity * p.unitCost)}</Td>
-                                        <Td>
+                    <Td>
                       <DraftPOAction
                         sku={p.sku}
                         productName={p.name}
@@ -896,6 +896,7 @@ function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
                         }
                         supplierName={liveSuppliers.find(s => s.id === p.supplierId)?.name ?? "Unknown supplier"}
                         supplierContact={liveSuppliers.find(s => s.id === p.supplierId)?.contact ?? "—"}
+                        supplierAddress={liveSuppliers.find(s => s.id === p.supplierId)?.address}
                         supplierTin={liveSuppliers.find(s => s.id === p.supplierId)?.tin}
                       />
                     </Td>

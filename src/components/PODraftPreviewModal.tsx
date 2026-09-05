@@ -7,6 +7,7 @@ export interface PODraftPreviewData {
   productName: string;
   supplierName: string;
   supplierContact: string;
+  supplierAddress?: string;
   supplierTin?: string;
   quantity: number;
   unitCost: number;
@@ -171,6 +172,12 @@ export function PODraftPreviewModal({
               <p className="text-xs text-muted-foreground">
                 {data.supplierContact}
               </p>
+
+              {data.supplierAddress && (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {data.supplierAddress}
+                </p>
+              )}
 
               {data.supplierTin && (
                 <p className="mt-0.5 font-mono text-xs text-muted-foreground">

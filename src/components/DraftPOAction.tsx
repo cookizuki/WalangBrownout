@@ -4,11 +4,11 @@ import { draftPO, useOps } from "@/lib/ops-store";
 import { PODraftPreviewModal, type PODraftPreviewData } from "@/components/PODraftPreviewModal";
 
 export function DraftPOAction({
-  sku, productName, quantity, requestedBy, unitCost, onHand, rop, formulaLabel, supplierName, supplierContact, supplierTin,
+  sku, productName, quantity, requestedBy, unitCost, onHand, rop, formulaLabel, supplierName, supplierContact, supplierAddress, supplierTin,
 }: {
   sku: string; productName: string; quantity: number; requestedBy: string;
   unitCost: number; onHand: number; rop: number; formulaLabel: string;
-  supplierName: string; supplierContact: string; supplierTin?: string;
+  supplierName: string; supplierContact: string; supplierAddress?: string; supplierTin?: string;
 }) {
   const { pendingPOs } = useOps();
   const [open, setOpen] = useState(false);
@@ -25,7 +25,7 @@ export function DraftPOAction({
   }
 
   const previewData: PODraftPreviewData = {
-    sku, productName, quantity, requestedBy, unitCost, onHand, rop, formulaLabel, supplierName, supplierContact, supplierTin,
+    sku, productName, quantity, requestedBy, unitCost, onHand, rop, formulaLabel, supplierName, supplierContact, supplierAddress, supplierTin,
   };
 
   return (
