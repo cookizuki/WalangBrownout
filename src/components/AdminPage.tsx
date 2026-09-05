@@ -12,41 +12,21 @@ import { toast } from "sonner";
 import { EditUserModal } from "@/components/EditUserModal";
 import { PODraftPreviewModal, type PODraftPreviewData } from "@/components/PODraftPreviewModal";
 
-
 const initials = (name: string) =>
   name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+
+/* ---------------------------- Users & Audit ---------------------------- */
 
 export function AdminPage() {
   const { account } = useSession();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const { pendingPOs: pending } = useOps();
-  const [leaving, setLeaving] = useState<string[]>([]);
-  const [showProductForm, setShowProductForm] = useState(false);
-  const [showSupplierForm, setShowSupplierForm] = useState(false);
-  const { suppliers, locations, products: liveProducts } = useOps();
   const [editingUser, setEditingUser] = useState<Account | null>(null);
-  const [previewingPO, setPreviewingPO] = useState<string | null>(null);
-  const [editingProduct, setEditingProduct] = useState<{ sku: string; name: string; unitCost: number; reorderPoint: number; leadTimeDays: number; abc: ABC; seasonalFlag: boolean } | null>(null);
-  const [editingSupplier, setEditingSupplier] = useState<typeof suppliers[number] | null>(null);
-  const [editingLocationId, setEditingLocationId] = useState<number | null>(null);
-  const [locationDraft, setLocationDraft] = useState("");
 
   useEffect(() => setAccounts(listAccounts()), []);
 
-  const resolvePO = (id: string, action: "Approved" | "Rejected") => {
-    if (leaving.includes(id)) return;
-    setLeaving(l => [...l, id]);
-    toast[action === "Approved" ? "success" : "error"](`Purchase order ${action.toLowerCase()}`, { description: id });
-    window.setTimeout(() => {
-      resolvePendingPO(id);
-      setLeaving(l => l.filter(x => x !== id));
-    }, 350);
-  };
-
   return (
     <div className="space-y-6">
-      {/* Section 1 — user management */}
       <section className="space-y-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
           User management (System Administrator responsibility)
@@ -76,23 +56,23 @@ export function AdminPage() {
             </FadeContent>
           )}
 
-      {editingUser && account && (
-        <EditUserModal
-          user={editingUser}
-          onClose={() => setEditingUser(null)}
-          onSaved={updated => {
-            setAccounts(a => a.map(u => (u.id === updated.id ? updated : u)));
-            toast.success("User updated", { description: `${updated.name} — ${roleLabel(updated.role)} · ${updated.status ?? "Active"}` });
-            logAudit(
-              Number(account.id.replace(/\D/g, "")) || 1,
-              account.name,
-              updated.status === "Inactive" ? "Deactivated user" : "Updated user",
-              `${updated.name} → ${roleLabel(updated.role)}, ${updated.status ?? "Active"}`,
-            );
-            setEditingUser(null);
-          }}
-        />
-      )}
+          {editingUser && account && (
+            <EditUserModal
+              user={editingUser}
+              onClose={() => setEditingUser(null)}
+              onSaved={updated => {
+                setAccounts(a => a.map(u => (u.id === updated.id ? updated : u)));
+                toast.success("User updated", { description: `${updated.name} — ${roleLabel(updated.role)} · ${updated.status ?? "Active"}` });
+                logAudit(
+                  Number(account.id.replace(/\D/g, "")) || 1,
+                  account.name,
+                  updated.status === "Inactive" ? "Deactivated user" : "Updated user",
+                  `${updated.name} → ${roleLabel(updated.role)}, ${updated.status ?? "Active"}`,
+                );
+                setEditingUser(null);
+              }}
+            />
+          )}
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-180 text-left text-sm">
@@ -147,328 +127,12 @@ export function AdminPage() {
         </div>
       </section>
 
-      {/* Section 2 — PO approval queue */}
-      <section className="space-y-2">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          purchase order approval queue (Purchasing Manager responsibility)
-        </p>
-        <div className="card-surface">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <h2 className="text-lg font-semibold">Pending Purchase Orders</h2>
-            <span className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground">
-              {pending.length} PENDING
-            </span>
-          </div>
-
-          <ul className="space-y-3 px-5 py-4">
-            {pending.map((po, i) => (
-              <AnimatedItem key={po.id} delay={i * 60}>
-                <div
-                  className={`rounded-lg border border-dashed border-border p-4 transition-opacity duration-300 ease-out motion-reduce:transition-none ${
-                    leaving.includes(po.id) ? "opacity-40" : "opacity-100"
-                  }`}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex flex-wrap items-baseline gap-3">
-                        <span className="text-sm font-semibold">{po.id}</span>
-                        <span className="text-sm text-muted-foreground">{po.supplier}</span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-muted-foreground">
-                        <span>{po.itemLabel} × {po.quantity}</span>
-                        <span className="font-semibold text-foreground">{money(po.totalCost)}</span>
-                        <span>
-                          Requested by {po.requestedBy} ·{" "}
-                          {new Date(po.requestedAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 gap-2">
-                      <button
-                        onClick={() => setPreviewingPO(po.id)}
-                        disabled={leaving.includes(po.id)}
-                        className="rounded-md bg-foreground px-4 py-1.5 text-xs font-semibold text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {leaving.includes(po.id) ? "Approved" : "Review"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </AnimatedItem>
-            ))}
-          </ul>
-
-          <div className="px-5 pb-5">
-            <div className="flex min-h-24 items-center justify-center rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
-              {pending.length === 0
-                ? "No purchase orders waiting — the queue is clear."
-                : "No other approvals pending — you're all caught up"}
-            </div>
-          </div>
-        </div>
-      </section>
-                  {/* Section 3 — product catalog */}
-      <section className="space-y-2">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          product catalog (System Administrator responsibility)
-        </p>
-        <div className="card-surface overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4">
-            <div>
-              <h2 className="text-lg font-semibold">Products</h2>
-              <p className="text-xs text-muted-foreground">{liveProducts.length} SKUs in catalog</p>
-            </div>
-            <button
-              onClick={() => setShowProductForm(true)}
-              className="rounded-md bg-foreground px-4 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
-            >
-              + Add Product
-            </button>
-          </div>
-          <ul className="divide-y divide-dashed divide-border border-t border-border">
-            {liveProducts.map(p => (
-              <li key={p.sku} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
-                <div className="min-w-0">
-                  <div className="truncate font-medium">{p.name}</div>
-                  <div className="font-mono text-xs text-muted-foreground">
-                    {p.sku} · Class {p.abc} · {money(p.unitCost)}
-                  </div>
-                </div>
-                <button
-                  onClick={() => setEditingProduct({
-                    sku: p.sku, name: p.name, unitCost: p.unitCost,
-                    reorderPoint: p.reorderPoint, leadTimeDays: p.leadTimeDays,
-                    abc: p.abc, seasonalFlag: p.seasonalFlag,
-                  })}
-                  className="shrink-0 text-xs font-medium underline underline-offset-4 hover:text-foreground/70"
-                >
-                  Edit
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-      {/* Section 3b — suppliers & locations */}
-      <section className="space-y-2">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          supplier directory & warehouse locations (System Administrator responsibility)
-        </p>
-        <div className="grid gap-5 lg:grid-cols-2">
-          <div className="card-surface">
-            <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <div>
-                <h2 className="text-lg font-semibold">Suppliers</h2>
-                <p className="text-xs text-muted-foreground">{suppliers.length} on file</p>
-              </div>
-              <button
-                onClick={() => setShowSupplierForm(true)}
-                className="rounded-md bg-foreground px-4 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
-              >
-                + Add Supplier
-              </button>
-            </div>
-              <ul className="divide-y divide-dashed divide-border">
-              {suppliers.map(s => (
-                <li key={s.id} className="flex items-start justify-between gap-3 px-5 py-3 text-sm">
-                  <div className="min-w-0">
-                    <div className="font-medium">{s.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {s.contact}{s.contactRole ? ` · ${s.contactRole}` : ""}
-                    </div>
-                    {(s.address || s.landline) && (
-                      <div className="mt-0.5 text-[11px] text-muted-foreground">
-                        {s.address}{s.address && s.landline ? " · " : ""}{s.landline}
-                      </div>
-                    )}
-                    {s.tin && (
-                      <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">TIN: {s.tin}</div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setEditingSupplier(s)}
-                    className="shrink-0 text-xs font-medium underline underline-offset-4 hover:text-foreground/70"
-                  >
-                    Edit
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="card-surface p-5">
-            <div className="mb-3">
-              <h2 className="text-lg font-semibold">Warehouse Locations</h2>
-              <p className="text-xs text-muted-foreground">{locations.length} zones mapped</p>
-            </div>
-            <LocationSetupWidget
-              onSave={v => {
-                addLocation(v);
-                toast.success("Location added", { description: `${v.zone}-${v.aisle}` });
-              }}
-            />
-            <ul className="mt-4 divide-y divide-dashed divide-border">
-              {locations.map(l => (
-                <li key={l.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                  <span className="shrink-0 font-mono text-xs font-semibold">{l.code}</span>
-                  {editingLocationId === l.id ? (
-                    <div className="flex flex-1 items-center gap-2">
-                      <input
-                        value={locationDraft}
-                        onChange={e => setLocationDraft(e.target.value)}
-                        autoFocus
-                        className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary"
-                      />
-                      <button
-                        onClick={() => {
-                          updateLocationDescription(l.id, locationDraft.trim() || l.description);
-                          setEditingLocationId(null);
-                        }}
-                        className="shrink-0 text-xs font-semibold text-foreground underline underline-offset-4"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setEditingLocationId(null)}
-                        className="shrink-0 text-xs text-muted-foreground underline underline-offset-4"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-1 items-center justify-between gap-2">
-                      <span className="truncate text-xs text-muted-foreground">{l.description}</span>
-                      <button
-                        onClick={() => { setEditingLocationId(l.id); setLocationDraft(l.description); }}
-                        className="shrink-0 text-xs font-medium underline underline-offset-4 hover:text-foreground/70"
-                      >
-                        Edit
-                      </button>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {showSupplierForm && (
-        <SupplierDirectoryForm
-          onClose={() => setShowSupplierForm(false)}
-          onSave={v => {
-            addSupplier(v);
-            toast.success("Supplier added", { description: v.name });
-            setShowSupplierForm(false);
-          }}
-        />
-      )}
-
-      {editingSupplier && (
-        <SupplierDirectoryForm
-          initial={{
-            name: editingSupplier.name,
-            contact: editingSupplier.contact,
-            contactRole: editingSupplier.contactRole ?? "",
-            address: editingSupplier.address ?? "",
-            landline: editingSupplier.landline ?? "",
-            tin: editingSupplier.tin ?? "",
-          }}
-          onClose={() => setEditingSupplier(null)}
-          onSave={v => {
-            updateSupplier(editingSupplier.id, v);
-            toast.success("Supplier updated", { description: v.name });
-            setEditingSupplier(null);
-          }}
-        />
-      )}
-      {/* Section 4 — audit trail */}
       <section className="space-y-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
           system audit trail (System Administrator responsibility)
         </p>
         <AuditLogPanel />
       </section>
-
-      {showProductForm && (
-        <ProductFormModal
-          onClose={() => setShowProductForm(false)}
-          onSave={v => {
-            if (account) addProduct(v, { userId: Number(account.id.replace(/\D/g, "")) || 1, userName: account.name });
-            toast.success("Product added", { description: `${v.sku} — ${v.name}` });
-            setShowProductForm(false);
-          }}
-        />
-      )}
-
-      {editingProduct && (
-        <ProductFormModal
-          initial={editingProduct}
-          onClose={() => setEditingProduct(null)}
-          onSave={v => {
-            if (account) updateProduct(editingProduct.sku, v, { userId: Number(account.id.replace(/\D/g, "")) || 1, userName: account.name });
-            toast.success("Product updated", { description: `${editingProduct.sku} — ${v.name}` });
-            setEditingProduct(null);
-          }}
-        />
-      )}
-
-      {previewingPO && (() => {
-        const po = pending.find(p => p.id === previewingPO);
-        if (!po) return null;
-        const matchedSupplier = suppliers.find(s => s.id === po.supplierId);
-        const data: PODraftPreviewData = {
-          poNumber: po.id,
-          sku: po.sku,
-          productName: po.itemLabel,
-          supplierName: po.supplier,
-          supplierContact: matchedSupplier
-            ? `${matchedSupplier.contact}${matchedSupplier.contactRole ? ` · ${matchedSupplier.contactRole}` : ""}`
-            : "—",
-          supplierTin: matchedSupplier?.tin,
-          quantity: po.quantity,
-          unitCost: po.totalCost / po.quantity,
-          requestedBy: po.requestedBy,
-        };
-
-    return (
-      <PODraftPreviewModal
-        mode="approval"
-        data={data}
-        onBack={() => {
-          setPreviewingPO(null);
-        }}
-         onReject={(reason) => {
-              resolvePO(po.id, "Rejected");
-              if (account) {
-                logAudit(
-                  Number(account.id.replace(/\D/g, "")) || 1,
-                  account.name,
-                  "Rejected purchase order",
-                  `${po.id} — Reason: ${reason ?? "Not specified"}`,
-                );
-              }
-              toast.error("Purchase order rejected", { description: reason });
-              setPreviewingPO(null);
-        }}
-
-        onConfirm={() => {
-          resolvePO(po.id, "Approved");
-
-          if (account) {
-            logAudit(
-              Number(account.id.replace(/\D/g, "")) || 1,
-              account.name,
-              "Approved purchase order",
-              po.id
-            );
-          }
-
-          setPreviewingPO(null);
-        }}
-      />
-    );
-  })()}
     </div>
   );
 }
@@ -561,5 +225,359 @@ function AnimatedRow({ children, delay = 0 }: { children: ReactNode; delay?: num
     >
       {children}
     </tr>
+  );
+}
+
+/* ------------------------ Purchase Order Approvals ------------------------ */
+
+export function PurchaseOrderApprovalsPage() {
+  const { account } = useSession();
+  const { pendingPOs: pending, suppliers } = useOps();
+  const [leaving, setLeaving] = useState<string[]>([]);
+  const [previewingPO, setPreviewingPO] = useState<string | null>(null);
+
+  const resolvePO = (id: string, action: "Approved" | "Rejected") => {
+    if (leaving.includes(id)) return;
+    setLeaving(l => [...l, id]);
+    toast[action === "Approved" ? "success" : "error"](`Purchase order ${action.toLowerCase()}`, { description: id });
+    window.setTimeout(() => {
+      resolvePendingPO(id);
+      setLeaving(l => l.filter(x => x !== id));
+    }, 350);
+  };
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        purchase order approval queue (Purchasing Manager responsibility)
+      </p>
+      <div className="card-surface">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="text-lg font-semibold">Pending Purchase Orders</h2>
+          <span className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground">
+            {pending.length} PENDING
+          </span>
+        </div>
+
+        <ul className="space-y-3 px-5 py-4">
+          {pending.map((po, i) => (
+            <AnimatedItem key={po.id} delay={i * 60}>
+              <div
+                className={`rounded-lg border border-dashed border-border p-4 transition-opacity duration-300 ease-out motion-reduce:transition-none ${
+                  leaving.includes(po.id) ? "opacity-40" : "opacity-100"
+                }`}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-baseline gap-3">
+                      <span className="text-sm font-semibold">{po.id}</span>
+                      <span className="text-sm text-muted-foreground">{po.supplier}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-muted-foreground">
+                      <span>{po.itemLabel} × {po.quantity}</span>
+                      <span className="font-semibold text-foreground">{money(po.totalCost)}</span>
+                      <span>
+                        Requested by {po.requestedBy} ·{" "}
+                        {new Date(po.requestedAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      onClick={() => setPreviewingPO(po.id)}
+                      disabled={leaving.includes(po.id)}
+                      className="rounded-md bg-foreground px-4 py-1.5 text-xs font-semibold text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {leaving.includes(po.id) ? "Approved" : "Review"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </AnimatedItem>
+          ))}
+        </ul>
+
+        <div className="px-5 pb-5">
+          <div className="flex min-h-24 items-center justify-center rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+            {pending.length === 0
+              ? "No purchase orders waiting — the queue is clear."
+              : "No other approvals pending — you're all caught up"}
+          </div>
+        </div>
+      </div>
+
+      {previewingPO && (() => {
+        const po = pending.find(p => p.id === previewingPO);
+        if (!po) return null;
+        const matchedSupplier = suppliers.find(s => s.id === po.supplierId);
+        const data: PODraftPreviewData = {
+          poNumber: po.id,
+          sku: po.sku,
+          productName: po.itemLabel,
+          supplierName: po.supplier,
+          supplierContact: matchedSupplier
+            ? `${matchedSupplier.contact}${matchedSupplier.contactRole ? ` · ${matchedSupplier.contactRole}` : ""}`
+            : "—",
+          supplierTin: matchedSupplier?.tin,
+          quantity: po.quantity,
+          unitCost: po.totalCost / po.quantity,
+          requestedBy: po.requestedBy,
+        };
+
+        return (
+          <PODraftPreviewModal
+            mode="approval"
+            data={data}
+            onBack={() => setPreviewingPO(null)}
+            onReject={(reason) => {
+              resolvePO(po.id, "Rejected");
+              if (account) {
+                logAudit(
+                  Number(account.id.replace(/\D/g, "")) || 1,
+                  account.name,
+                  "Rejected purchase order",
+                  `${po.id} — Reason: ${reason ?? "Not specified"}`,
+                );
+              }
+              toast.error("Purchase order rejected", { description: reason });
+              setPreviewingPO(null);
+            }}
+            onConfirm={() => {
+              resolvePO(po.id, "Approved");
+              if (account) {
+                logAudit(
+                  Number(account.id.replace(/\D/g, "")) || 1,
+                  account.name,
+                  "Approved purchase order",
+                  po.id,
+                );
+              }
+              setPreviewingPO(null);
+            }}
+          />
+        );
+      })()}
+    </div>
+  );
+}
+
+/* ------------------------------ Product Catalog ---------------------------- */
+
+export function ProductCatalogPage() {
+  const { account } = useSession();
+  const { products: liveProducts } = useOps();
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<{ sku: string; name: string; unitCost: number; reorderPoint: number; leadTimeDays: number; abc: ABC; seasonalFlag: boolean } | null>(null);
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        product catalog (System Administrator responsibility)
+      </p>
+      <div className="card-surface overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4">
+          <div>
+            <h2 className="text-lg font-semibold">Products</h2>
+            <p className="text-xs text-muted-foreground">{liveProducts.length} SKUs in catalog</p>
+          </div>
+          <button
+            onClick={() => setShowProductForm(true)}
+            className="rounded-md bg-foreground px-4 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
+          >
+            + Add Product
+          </button>
+        </div>
+        <ul className="divide-y divide-dashed divide-border border-t border-border">
+          {liveProducts.map(p => (
+            <li key={p.sku} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+              <div className="min-w-0">
+                <div className="truncate font-medium">{p.name}</div>
+                <div className="font-mono text-xs text-muted-foreground">
+                  {p.sku} · Class {p.abc} · {money(p.unitCost)}
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingProduct({
+                  sku: p.sku, name: p.name, unitCost: p.unitCost,
+                  reorderPoint: p.reorderPoint, leadTimeDays: p.leadTimeDays,
+                  abc: p.abc, seasonalFlag: p.seasonalFlag,
+                })}
+                className="shrink-0 text-xs font-medium underline underline-offset-4 hover:text-foreground/70"
+              >
+                Edit
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {showProductForm && (
+        <ProductFormModal
+          onClose={() => setShowProductForm(false)}
+          onSave={v => {
+            if (account) addProduct(v, { userId: Number(account.id.replace(/\D/g, "")) || 1, userName: account.name });
+            toast.success("Product added", { description: `${v.sku} — ${v.name}` });
+            setShowProductForm(false);
+          }}
+        />
+      )}
+
+      {editingProduct && (
+        <ProductFormModal
+          initial={editingProduct}
+          onClose={() => setEditingProduct(null)}
+          onSave={v => {
+            if (account) updateProduct(editingProduct.sku, v, { userId: Number(account.id.replace(/\D/g, "")) || 1, userName: account.name });
+            toast.success("Product updated", { description: `${editingProduct.sku} — ${v.name}` });
+            setEditingProduct(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ------------------------ Suppliers & Locations ------------------------ */
+
+export function SupplierLocationsPage() {
+  const { suppliers, locations } = useOps();
+  const [showSupplierForm, setShowSupplierForm] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<typeof suppliers[number] | null>(null);
+  const [editingLocationId, setEditingLocationId] = useState<number | null>(null);
+  const [locationDraft, setLocationDraft] = useState("");
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        supplier directory & warehouse locations (System Administrator responsibility)
+      </p>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="card-surface">
+          <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <div>
+              <h2 className="text-lg font-semibold">Suppliers</h2>
+              <p className="text-xs text-muted-foreground">{suppliers.length} on file</p>
+            </div>
+            <button
+              onClick={() => setShowSupplierForm(true)}
+              className="rounded-md bg-foreground px-4 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
+            >
+              + Add Supplier
+            </button>
+          </div>
+          <ul className="divide-y divide-dashed divide-border">
+            {suppliers.map(s => (
+              <li key={s.id} className="flex items-start justify-between gap-3 px-5 py-3 text-sm">
+                <div className="min-w-0">
+                  <div className="font-medium">{s.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {s.contact}{s.contactRole ? ` · ${s.contactRole}` : ""}
+                  </div>
+                  {(s.address || s.landline) && (
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">
+                      {s.address}{s.address && s.landline ? " · " : ""}{s.landline}
+                    </div>
+                  )}
+                  {s.tin && (
+                    <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">TIN: {s.tin}</div>
+                  )}
+                </div>
+                <button
+                  onClick={() => setEditingSupplier(s)}
+                  className="shrink-0 text-xs font-medium underline underline-offset-4 hover:text-foreground/70"
+                >
+                  Edit
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="card-surface p-5">
+          <div className="mb-3">
+            <h2 className="text-lg font-semibold">Warehouse Locations</h2>
+            <p className="text-xs text-muted-foreground">{locations.length} zones mapped</p>
+          </div>
+          <LocationSetupWidget
+            onSave={v => {
+              addLocation(v);
+              toast.success("Location added", { description: `${v.zone}-${v.aisle}` });
+            }}
+          />
+          <ul className="mt-4 divide-y divide-dashed divide-border">
+            {locations.map(l => (
+              <li key={l.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="shrink-0 font-mono text-xs font-semibold">{l.code}</span>
+                {editingLocationId === l.id ? (
+                  <div className="flex flex-1 items-center gap-2">
+                    <input
+                      value={locationDraft}
+                      onChange={e => setLocationDraft(e.target.value)}
+                      autoFocus
+                      className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary"
+                    />
+                    <button
+                      onClick={() => {
+                        updateLocationDescription(l.id, locationDraft.trim() || l.description);
+                        setEditingLocationId(null);
+                      }}
+                      className="shrink-0 text-xs font-semibold text-foreground underline underline-offset-4"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setEditingLocationId(null)}
+                      className="shrink-0 text-xs text-muted-foreground underline underline-offset-4"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-1 items-center justify-between gap-2">
+                    <span className="truncate text-xs text-muted-foreground">{l.description}</span>
+                    <button
+                      onClick={() => { setEditingLocationId(l.id); setLocationDraft(l.description); }}
+                      className="shrink-0 text-xs font-medium underline underline-offset-4 hover:text-foreground/70"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {showSupplierForm && (
+        <SupplierDirectoryForm
+          onClose={() => setShowSupplierForm(false)}
+          onSave={v => {
+            addSupplier(v);
+            toast.success("Supplier added", { description: v.name });
+            setShowSupplierForm(false);
+          }}
+        />
+      )}
+
+      {editingSupplier && (
+        <SupplierDirectoryForm
+          initial={{
+            name: editingSupplier.name,
+            contact: editingSupplier.contact,
+            contactRole: editingSupplier.contactRole ?? "",
+            address: editingSupplier.address ?? "",
+            landline: editingSupplier.landline ?? "",
+            tin: editingSupplier.tin ?? "",
+          }}
+          onClose={() => setEditingSupplier(null)}
+          onSave={v => {
+            updateSupplier(editingSupplier.id, v);
+            toast.success("Supplier updated", { description: v.name });
+            setEditingSupplier(null);
+          }}
+        />
+      )}
+    </div>
   );
 }

@@ -9,7 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { roleLabel, useSession, type Role } from "@/lib/auth";
 import { CountUp } from "@/components/CountUp";
 import { AnimatedItem } from "@/components/AnimatedList";
-import { AdminPage } from "@/components/AdminPage";
+import { AdminPage, PurchaseOrderApprovalsPage, ProductCatalogPage, SupplierLocationsPage } from "@/components/AdminPage";
 import { StockCountsPage, TransactionLogPage, BatchesPage } from "@/components/ops-pages";
 import {
   Th, Td, SectionLabel, Panel, TaskPill, StatusPill, AnimatedRow,
@@ -31,6 +31,7 @@ import {
   LayoutDashboard, Package, Layers, Bell, CalendarCheck2, ClipboardList,
   History, ShoppingCart, Boxes, Truck, ShieldCheck, BarChart3, Receipt,
   TrendingDown, Sun, Clock, Scale, LogOut, RefreshCw, AlertTriangle,
+  FileCheck2, Tags, Warehouse,
   type LucideIcon,
 } from "lucide-react";
 
@@ -55,7 +56,8 @@ export const Route = createFileRoute("/")({
 type Tab =
   | "overview" | "inventory" | "batches" | "alerts"
   | "myday" | "counts" | "txlog" | "reorder"
-  | "picks" | "receiving" | "admin" | "reports" | "salesorders";
+  | "picks" | "receiving" | "admin" | "reports" | "salesorders"
+  | "poapprovals" | "products" | "suppliers";
 
 const PAGE_META: Record<Tab, { title: string; subtitle: string }> = {
   overview: { title: "Overview", subtitle: "Real-time status" },
@@ -68,9 +70,12 @@ const PAGE_META: Record<Tab, { title: string; subtitle: string }> = {
   reorder: { title: "Reorder Review", subtitle: "ROP breaches queued for purchasing" },
   picks: { title: "Pick Tasks", subtitle: "FIFO-enforced picking queue" },
   receiving: { title: "Receiving", subtitle: "Inbound POs, putaway and location" },
-  admin: { title: "Admin", subtitle: "User management and purchase order approvals" },
+  admin: { title: "Admin", subtitle: "User management and audit trail" },
   reports: { title: "Reports", subtitle: "Shrinkage and sales velocity history" },
   salesorders: { title: "Sales Orders", subtitle: "Order fulfillment status, derived from the pick queue" },
+  poapprovals: { title: "PO Approvals", subtitle: "Purchase orders awaiting review and approval" },
+  products: { title: "Product Catalog", subtitle: "Manage SKUs, cost, and reorder settings" },
+  suppliers: { title: "Suppliers & Locations", subtitle: "Supplier directory and warehouse zones" },
 };
 const TAB_ICONS: Record<Tab, LucideIcon> = {
   overview: LayoutDashboard,
@@ -86,10 +91,13 @@ const TAB_ICONS: Record<Tab, LucideIcon> = {
   admin: ShieldCheck,
   reports: BarChart3,
   salesorders: Receipt,
+  poapprovals: FileCheck2,
+  products: Tags,
+  suppliers: Warehouse,
 };
 
 const ROLE_NAV: Record<Role, Tab[]> = {
-  ADMIN: ["overview", "inventory", "batches", "alerts", "salesorders", "reports", "admin"],
+  ADMIN: ["overview", "inventory", "batches", "alerts", "salesorders", "reports", "poapprovals", "products", "suppliers", "admin"],
   INVENTORY_STAFF: ["myday", "inventory", "counts", "txlog", "reorder", "salesorders", "batches", "alerts"],
   WAREHOUSE_STAFF: ["myday", "counts", "picks", "receiving", "batches", "alerts"],
 };
@@ -244,6 +252,9 @@ function Dashboard() {
           {tab === "reorder" && <ReorderReviewPage requestedBy={account.name} />}
           {tab === "picks" && <PickTasksPage />}
           {tab === "receiving" && <ReceivingPage />}
+          {tab === "poapprovals" && account.role === "ADMIN" && <PurchaseOrderApprovalsPage />}
+          {tab === "products" && account.role === "ADMIN" && <ProductCatalogPage />}
+          {tab === "suppliers" && account.role === "ADMIN" && <SupplierLocationsPage />}
           {tab === "admin" && account.role === "ADMIN" && <AdminPage />}
           {tab === "reports" && account.role === "ADMIN" && <ReportsPage />}
           {tab === "salesorders" && <SalesOrdersPage />}
