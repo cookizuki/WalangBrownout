@@ -44,6 +44,14 @@ export interface AuditEntry {
   target: string;
   timestamp: string;
 }
+export interface NotificationEntry {
+  id: string;
+  userId: number;
+  title: string;
+  detail: string;
+  read: boolean;
+  timestamp: string;
+}
 
 export type AdjustmentReason = "DAMAGE" | "LOSS" | "CORRECTION";
 
@@ -60,6 +68,7 @@ interface OpsState {
   suppliers: Supplier[];
   locations: WarehouseLocation[];
   ackedAlerts: Record<string, { userId: number; userName: string; at: string }>;
+  notifications: NotificationEntry[];
 }
 
 let state: OpsState = {
@@ -77,6 +86,7 @@ let state: OpsState = {
   suppliers: seedSuppliers.map(s => ({ ...s })),
   locations: seedLocations.map(l => ({ ...l })),
   ackedAlerts: {},
+  notifications: [],
 };
 
 const listeners = new Set<() => void>();
@@ -111,6 +121,29 @@ export function logAudit(userId: number, userName: string, action: string, targe
       ...state.auditLog,
     ],
   };
+}
+let notifSeq = 1;
+function pushNotification(userId: number, title: string, detail: string) {
+  state = {
+    ...state,
+    notifications: [
+      { id: `N-${String(notifSeq++).padStart(4, "0")}`, userId, title, detail, read: false, timestamp: new Date().toISOString() },
+      ...state.notifications,
+    ],
+  };
+}
+
+export function markNotificationRead(id: string) {
+  state = { ...state, notifications: state.notifications.map(n => (n.id === id ? { ...n, read: true } : n)) };
+  emit();
+}
+
+export function markAllNotificationsRead(userId: number) {
+  state = {
+    ...state,
+    notifications: state.notifications.map(n => (n.userId === userId ? { ...n, read: true } : n)),
+  };
+  emit();
 }
 /**
  * Records an alert acknowledgment in shared store state — visible to every
@@ -267,8 +300,18 @@ export function draftPO(input: { sku: string; quantity: number; requestedBy: str
 }
 
 /** Admin approves or rejects a pending PO — removes it from the queue. */
-export function resolvePendingPO(id: string) {
+export function resolvePendingPO(id: string, notify?: { userId: number; approved: boolean; reason?: string }) {
+  const po = state.pendingPOs.find(p => p.id === id);
   state = { ...state, pendingPOs: state.pendingPOs.filter(po => po.id !== id) };
+  if (po && notify) {
+    pushNotification(
+      notify.userId,
+      notify.approved ? "Purchase order approved" : "Purchase order rejected",
+      notify.approved
+        ? `${po.id} — ${po.itemLabel} was approved and can proceed.`
+        : `${po.id} — ${po.itemLabel} was rejected. ${notify.reason ?? ""}`.trim(),
+    );
+  }
   emit();
 }
 
@@ -771,6 +814,14 @@ export interface PurchaseHistoryEntry {
   costSource: "po" | "estimated";
 }
 
+export interface CostSummary {
+  currentCost: number;
+  lastPurchaseCost: number | null;
+  lastPurchaseDate: string | null;
+  averageCost: number | null; // quantity-weighted average across all history
+  trend: "up" | "down" | "same" | null; // last purchase vs. average
+}
+
 /**
  * Per-SKU purchase history: every completed receiving line for a product,
  * newest first. Unit cost comes from the matching Purchase Order record
@@ -813,6 +864,46 @@ export function usePurchaseHistory(sku: string): PurchaseHistoryEntry[] {
     () => derivePurchaseHistory(sku, receivingLines, purchaseOrders, suppliers, products),
     [sku, receivingLines, products, suppliers],
   );
+}
+
+/**
+ * Reduces a SKU's purchase history into current / last / average cost —
+ * built on the same history rows already used above, not a separate
+ * computation, so the two views can never disagree with each other.
+ */
+export function computeCostSummary(sku: string, history: PurchaseHistoryEntry[], products: Product[]): CostSummary {
+  const currentCost = products.find(p => p.sku === sku)?.unitCost ?? 0;
+
+  if (history.length === 0) {
+    return { currentCost, lastPurchaseCost: null, lastPurchaseDate: null, averageCost: null, trend: null };
+  }
+
+  // history is already sorted newest-first by derivePurchaseHistory
+  const last = history[0];
+  const totalQty = history.reduce((s, h) => s + h.quantityReceived, 0);
+  const totalSpend = history.reduce((s, h) => s + h.totalCost, 0);
+  const averageCost = totalQty > 0 ? totalSpend / totalQty : null;
+
+  let trend: CostSummary["trend"] = null;
+  if (averageCost !== null) {
+    const diff = last.unitCost - averageCost;
+    trend = Math.abs(diff) < 0.5 ? "same" : diff > 0 ? "up" : "down";
+  }
+
+  return {
+    currentCost,
+    lastPurchaseCost: last.unitCost,
+    lastPurchaseDate: last.date,
+    averageCost,
+    trend,
+  };
+}
+
+/** Live cost summary for one SKU — current vs. last purchase vs. average. */
+export function useCostSummary(sku: string): CostSummary {
+  const history = usePurchaseHistory(sku);
+  const { products } = useOps();
+  return useMemo(() => computeCostSummary(sku, history, products), [sku, history, products]);
 }
 /**
  * Computes all alerts from the CURRENT live store state — recalculated

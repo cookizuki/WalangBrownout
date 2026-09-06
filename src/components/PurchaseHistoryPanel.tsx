@@ -1,13 +1,20 @@
 import { useState } from "react";
 import { products, money } from "@/lib/inventory-data";
-import { usePurchaseHistory } from "@/lib/ops-store";
+import { usePurchaseHistory, useCostSummary } from "@/lib/ops-store";
 import { Th, Td } from "@/components/ui-bits";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+
+const TREND_ICON = { up: TrendingUp, down: TrendingDown, same: Minus } as const;
+const TREND_LABEL = { up: "Above average", down: "Below average", same: "At average" } as const;
+const TREND_CLASS = { up: "text-danger", down: "text-success", same: "text-muted-foreground" } as const;
 
 export function PurchaseHistoryPanel() {
   const [sku, setSku] = useState(products[0]?.sku ?? "");
   const history = usePurchaseHistory(sku);
+  const cost = useCostSummary(sku);
   const totalUnits = history.reduce((s, h) => s + h.quantityReceived, 0);
   const totalSpend = history.reduce((s, h) => s + h.totalCost, 0);
+  const TrendIcon = cost.trend ? TREND_ICON[cost.trend] : null;
 
   return (
     <div className="card-surface overflow-hidden">
@@ -25,6 +32,32 @@ export function PurchaseHistoryPanel() {
             <option key={p.sku} value={p.sku}>{p.sku} · {p.name}</option>
           ))}
         </select>
+      </div>
+
+      <div className="grid gap-3 border-b border-border px-5 py-4 sm:grid-cols-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Current Catalog Cost</p>
+          <p className="mt-1 font-mono text-lg font-semibold">{money(cost.currentCost)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Last Purchase Cost</p>
+          <p className="mt-1 font-mono text-lg font-semibold">
+            {cost.lastPurchaseCost !== null ? money(cost.lastPurchaseCost) : "—"}
+          </p>
+          {cost.lastPurchaseDate && <p className="text-[11px] text-muted-foreground">{cost.lastPurchaseDate}</p>}
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Average Cost</p>
+          <p className="mt-1 font-mono text-lg font-semibold">
+            {cost.averageCost !== null ? money(cost.averageCost) : "—"}
+          </p>
+          {cost.trend && TrendIcon && (
+            <p className={`flex items-center gap-1 text-[11px] font-medium ${TREND_CLASS[cost.trend]}`}>
+              <TrendIcon className="h-3 w-3" strokeWidth={2.5} />
+              {TREND_LABEL[cost.trend]}
+            </p>
+          )}
+        </div>
       </div>
 
       {history.length === 0 ? (

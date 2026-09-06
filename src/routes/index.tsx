@@ -34,6 +34,7 @@ import {
   FileCheck2, Tags, Warehouse,
   type LucideIcon,
 } from "lucide-react";
+import { NotificationBell } from "@/components/NotificationBell";
 
 import wbLogo from "@/assets/WB LOGO.jpg";
 
@@ -225,6 +226,7 @@ function Dashboard() {
           <span className="hidden shrink-0 items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[10px] font-medium text-muted-foreground sm:flex">
             <kbd className="font-sans">ctrl + K</kbd> to search
           </span>
+          <NotificationBell />
           {showSearch && (
             <input
               value={query}

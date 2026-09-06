@@ -235,6 +235,8 @@ export function PurchaseOrderApprovalsPage() {
   const { pendingPOs: pending, suppliers } = useOps();
   const [leaving, setLeaving] = useState<string[]>([]);
   const [previewingPO, setPreviewingPO] = useState<string | null>(null);
+  const accounts = listAccounts();
+  const findUserId = (name: string) => Number(accounts.find(a => a.name === name)?.id.replace(/\D/g, "")) || 0;
 
   const resolvePO = (id: string, action: "Approved" | "Rejected") => {
     if (leaving.includes(id)) return;
@@ -325,6 +327,11 @@ export function PurchaseOrderApprovalsPage() {
           requestedBy: po.requestedBy,
         };
 
+        function findUserId(requestedBy: string): number {
+          throw new Error("Function not implemented.");
+          
+        }
+
         return (
           <PODraftPreviewModal
             mode="approval"
@@ -337,22 +344,15 @@ export function PurchaseOrderApprovalsPage() {
                   Number(account.id.replace(/\D/g, "")) || 1,
                   account.name,
                   "Rejected purchase order",
-                  `${po.id} — Reason: ${reason ?? "Not specified"}`,
+                  `${po.id} — Reason: ${reason}`,
                 );
               }
               toast.error("Purchase order rejected", { description: reason });
               setPreviewingPO(null);
             }}
             onConfirm={() => {
-              resolvePO(po.id, "Approved");
-              if (account) {
-                logAudit(
-                  Number(account.id.replace(/\D/g, "")) || 1,
-                  account.name,
-                  "Approved purchase order",
-                  po.id,
-                );
-              }
+              resolvePendingPO(po.id, { userId: findUserId(po.requestedBy), approved: true });
+              if (account) logAudit(Number(account.id.replace(/\D/g, "")) || 1, account.name, "Approved purchase order", po.id);
               setPreviewingPO(null);
             }}
           />
