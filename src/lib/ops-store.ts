@@ -1103,3 +1103,83 @@ export function computeDeadStock(
 
   return rows.sort((a, b) => (b.daysSinceLastSale ?? Infinity) - (a.daysSinceLastSale ?? Infinity));
 }
+
+export interface ValuationRow {
+  abc: ABC;
+  units: number;
+  value: number;
+}
+
+export interface ValuationSummary {
+  totalValue: number;
+  byClass: ValuationRow[];
+}
+
+/** Total inventory value right now, broken down by ABC class. */
+export function computeValuation(
+  s: Pick<OpsState, "products" | "batches">,
+): ValuationSummary {
+  const byClass: Record<ABC, ValuationRow> = {
+    A: { abc: "A", units: 0, value: 0 },
+    B: { abc: "B", units: 0, value: 0 },
+    C: { abc: "C", units: 0, value: 0 },
+  };
+
+  for (const p of s.products) {
+    const units = onHand(p.sku, s.batches);
+    if (units <= 0) continue;
+    const value = units * p.unitCost;
+    byClass[p.abc].units += units;
+    byClass[p.abc].value += value;
+  }
+
+  const rows = [byClass.A, byClass.B, byClass.C];
+  return { totalValue: rows.reduce((sum, r) => sum + r.value, 0), byClass: rows };
+}
+
+export interface TurnoverRow {
+  sku: string;
+  name: string;
+  abc: ABC;
+  unitsSoldPeriod: number;
+  avgOnHand: number;
+  turnoverRate: number | null;
+  daysOfInventory: number | null;
+}
+
+/**
+ * Unit-based turnover — units sold in the lookback window divided by current
+ * on-hand as a stand-in for average on-hand (this is a real, standard
+ * simplification; a period-average would need historical stock snapshots
+ * this prototype doesn't persist).
+ */
+export function computeTurnover(
+  s: Pick<OpsState, "products" | "batches" | "transactions">,
+  lookbackDays = 90,
+): TurnoverRow[] {
+  const cutoff = Date.now() - lookbackDays * 86400000;
+
+  return s.products
+    .map(p => {
+      const onHandQty = onHand(p.sku, s.batches);
+      const unitsSold = s.transactions
+        .filter(t => t.sku === p.sku && t.type === "SALE" && new Date(t.timestamp).getTime() >= cutoff)
+        .reduce((sum, t) => sum + Math.abs(t.quantityDelta), 0);
+
+      const turnoverRate = onHandQty > 0 ? unitsSold / onHandQty : null;
+      const periodizedRate = turnoverRate !== null ? turnoverRate * (365 / lookbackDays) : null;
+      const daysOfInventory = periodizedRate && periodizedRate > 0 ? Math.round(365 / periodizedRate) : null;
+
+      return {
+        sku: p.sku,
+        name: p.name,
+        abc: p.abc,
+        unitsSoldPeriod: unitsSold,
+        avgOnHand: onHandQty,
+        turnoverRate: periodizedRate !== null ? Math.round(periodizedRate * 10) / 10 : null,
+        daysOfInventory,
+      };
+    })
+    .filter(r => r.avgOnHand > 0)
+    .sort((a, b) => (b.turnoverRate ?? 0) - (a.turnoverRate ?? 0));
+}

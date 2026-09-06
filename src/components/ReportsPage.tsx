@@ -8,7 +8,7 @@ import { money } from "@/lib/inventory-data";
 import { useChartColors } from "@/hooks/use-chart-colors";
 import { Th, Td } from "@/components/ui-bits";
 import { PurchaseHistoryPanel } from "@/components/PurchaseHistoryPanel";
-import { computeDeadStock } from "@/lib/ops-store";
+import { computeDeadStock, computeValuation, computeTurnover } from "@/lib/ops-store";
 
 const MONTH_LABELS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -64,6 +64,8 @@ export function ReportsPage() {
     () => computeDeadStock({ products, batches, transactions }),
     [products, batches, transactions],
   );
+    const valuation = useMemo(() => computeValuation({ products, batches }), [products, batches]);
+  const turnover = useMemo(() => computeTurnover({ products, batches, transactions }), [products, batches, transactions]);
   const totalTiedUp = deadStock.reduce((s, r) => s + r.tiedUpValue, 0);
 
   const shrinkageByMonth = useMemo(() => {
@@ -205,6 +207,85 @@ export function ReportsPage() {
           </div>
         </div>
               <div className="space-y-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Inventory valuation — total capital currently held, by ABC class
+        </p>
+        <div className="card-surface overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-4">
+            <h2 className="text-sm font-semibold">Inventory Valuation</h2>
+            <span className="rounded-full border border-info/40 px-3 py-1 text-[11px] font-semibold text-info">
+              {money(valuation.totalValue)} total
+            </span>
+          </div>
+          <div className="grid gap-4 p-5 sm:grid-cols-3">
+            {valuation.byClass.map(row => {
+              const pct = valuation.totalValue > 0 ? (row.value / valuation.totalValue) * 100 : 0;
+              return (
+                <div key={row.abc} className="rounded-lg border border-dashed border-border p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-grid h-6 w-6 place-items-center rounded border border-border text-xs font-semibold">{row.abc}</span>
+                    <span className="text-xs text-muted-foreground">{pct.toFixed(0)}%</span>
+                  </div>
+                  <p className="mt-3 font-mono text-lg font-semibold">{money(row.value)}</p>
+                  <p className="text-xs text-muted-foreground">{row.units} units on hand</p>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-foreground transition-[width] duration-500 ease-out" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="border-t border-border px-5 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">
+            Valuation = on-hand quantity × unit cost, per active batch
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Turnover — how efficiently held stock converts to sales
+        </p>
+        <div className="card-surface overflow-hidden">
+          <div className="border-b border-border px-5 py-4">
+            <h2 className="text-sm font-semibold">Inventory Turnover</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-150 text-sm">
+              <thead className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
+                <tr className="border-b border-border">
+                  <th className="px-5 py-3 font-semibold">Product</th>
+                  <th className="px-5 py-3 font-semibold">Class</th>
+                  <th className="px-5 py-3 font-semibold">On Hand</th>
+                  <th className="px-5 py-3 font-semibold">Turnover Rate</th>
+                  <th className="px-5 py-3 font-semibold">Days of Inventory</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-dashed divide-border">
+                {turnover.map(r => (
+                  <tr key={r.sku} className="hover:bg-muted/40">
+                    <td className="px-5 py-3 font-medium">{r.name}</td>
+                    <td className="px-5 py-3">
+                      <span className="inline-grid h-5 w-5 place-items-center rounded border border-border text-[10px] font-semibold">{r.abc}</span>
+                    </td>
+                    <td className="px-5 py-3 font-mono">{r.avgOnHand}</td>
+                    <td className="px-5 py-3 font-mono">{r.turnoverRate !== null ? `${r.turnoverRate}×/yr` : "—"}</td>
+                    <td className="px-5 py-3 font-mono text-xs text-muted-foreground">
+                      {r.daysOfInventory !== null ? `${r.daysOfInventory} days` : "—"}
+                    </td>
+                  </tr>
+                ))}
+                {turnover.length === 0 && (
+                  <tr><td colSpan={5} className="px-5 py-10 text-center text-muted-foreground">No stock currently on hand to evaluate.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <p className="border-t border-border px-5 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">
+            Turnover = (units sold in last 90 days ÷ current on-hand), annualized · Days of Inventory = 365 ÷ turnover rate
+          </p>
+        </div>
+      </div>
+        <div className="space-y-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
           Dead stock — SKUs with no recent sales activity, still tying up capital
         </p>
