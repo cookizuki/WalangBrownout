@@ -8,6 +8,7 @@ import { money } from "@/lib/inventory-data";
 import { useChartColors } from "@/hooks/use-chart-colors";
 import { Th, Td } from "@/components/ui-bits";
 import { PurchaseHistoryPanel } from "@/components/PurchaseHistoryPanel";
+import { computeDeadStock } from "@/lib/ops-store";
 
 const MONTH_LABELS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -58,6 +59,12 @@ export function ReportsPage() {
     () => Object.fromEntries(products.map(p => [p.sku, p])),
     [products],
   );
+    const { batches } = useOps();
+  const deadStock = useMemo(
+    () => computeDeadStock({ products, batches, transactions }),
+    [products, batches, transactions],
+  );
+  const totalTiedUp = deadStock.reduce((s, r) => s + r.tiedUpValue, 0);
 
   const shrinkageByMonth = useMemo(() => {
     const buckets: Record<string, { units: number; cost: number }> = {};
@@ -197,6 +204,63 @@ export function ReportsPage() {
             <span className="ml-auto normal-case tracking-normal">Consistently high-volume B/C items may be candidates for reclassification to A</span>
           </div>
         </div>
+              <div className="space-y-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Dead stock — SKUs with no recent sales activity, still tying up capital
+        </p>
+        <div className="card-surface overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-4">
+            <h2 className="text-sm font-semibold">Dead / Slow-Moving Stock</h2>
+            <span className="rounded-full border border-warning/40 px-3 py-1 text-[11px] font-semibold text-warning">
+              {money(totalTiedUp)} tied up
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-160 text-sm">
+              <thead className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
+                <tr className="border-b border-border">
+                  <th className="px-5 py-3 font-semibold">SKU</th>
+                  <th className="px-5 py-3 font-semibold">Product</th>
+                  <th className="px-5 py-3 font-semibold">Class</th>
+                  <th className="px-5 py-3 font-semibold">On Hand</th>
+                  <th className="px-5 py-3 font-semibold">Last Sale</th>
+                  <th className="px-5 py-3 font-semibold">Age</th>
+                  <th className="px-5 py-3 font-semibold">Value Tied Up</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-dashed divide-border">
+                {deadStock.map(r => (
+                  <tr key={r.sku} className="hover:bg-muted/40">
+                    <td className="px-5 py-3 font-mono text-xs">{r.sku}</td>
+                    <td className="px-5 py-3 font-medium">{r.name}</td>
+                    <td className="px-5 py-3">
+                      <span className="inline-grid h-5 w-5 place-items-center rounded border border-border text-[10px] font-semibold">{r.abc}</span>
+                    </td>
+                    <td className="px-5 py-3 font-mono">{r.onHand}</td>
+                    <td className="px-5 py-3 text-muted-foreground">{r.lastSaleDate ?? "Never sold"}</td>
+                    <td className="px-5 py-3">
+                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+                        r.bucket === "180+" ? "border-danger/50 text-danger"
+                        : r.bucket === "90+" ? "border-warning/50 text-warning"
+                        : "border-border text-muted-foreground"
+                      }`}>
+                        {r.daysSinceLastSale === null ? "Never" : `${r.daysSinceLastSale}d`} · {r.bucket}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 font-mono text-xs">{money(r.tiedUpValue)}</td>
+                  </tr>
+                ))}
+                {deadStock.length === 0 && (
+                  <tr><td colSpan={7} className="px-5 py-10 text-center text-muted-foreground">No dead stock detected — everything is moving.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <p className="border-t border-border px-5 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">
+            Flagged at 30+ days without a sale · consider markdown, bundling, or reclassifying to Class C
+          </p>
+        </div>
+      </div>
       </div>
 
       <div className="space-y-2">

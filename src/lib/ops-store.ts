@@ -954,3 +954,61 @@ export function suggestSeasonalMultiplier(sku: string): { suggested: number | nu
   const ratio = inAvg / outAvg;
   return { suggested: Math.round(ratio * 10) / 10, sampleSize: sales.length };
 }
+
+export interface DeadStockRow {
+  sku: string;
+  name: string;
+  abc: ABC;
+  onHand: number;
+  daysSinceLastSale: number | null; // null = never sold
+  lastSaleDate: string | null;
+  bucket: "30+" | "60+" | "90+" | "180+";
+  tiedUpValue: number;
+}
+
+/**
+ * Flags SKUs that are sitting on stock without recent sales activity.
+ * Uses the same live transactions/products/batches already powering
+ * Reports and Overview — no new data model needed.
+ */
+export function computeDeadStock(
+  s: Pick<OpsState, "products" | "batches" | "transactions">,
+  minDays = 30,
+): DeadStockRow[] {
+  const now = new Date();
+  const rows: DeadStockRow[] = [];
+
+  for (const p of s.products) {
+    const stock = onHand(p.sku, s.batches);
+    if (stock <= 0) continue; // nothing tied up, not "dead"
+
+    const sales = s.transactions
+      .filter(t => t.sku === p.sku && t.type === "SALE")
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+    const lastSale = sales[0] ?? null;
+    const daysSince = lastSale
+      ? Math.floor((now.getTime() - new Date(lastSale.timestamp).getTime()) / 86400000)
+      : null;
+
+    const isDead = daysSince === null || daysSince >= minDays;
+    if (!isDead) continue;
+
+    const effectiveDays = daysSince ?? Infinity;
+    const bucket: DeadStockRow["bucket"] =
+      effectiveDays >= 180 ? "180+" : effectiveDays >= 90 ? "90+" : effectiveDays >= 60 ? "60+" : "30+";
+
+    rows.push({
+      sku: p.sku,
+      name: p.name,
+      abc: p.abc,
+      onHand: stock,
+      daysSinceLastSale: daysSince,
+      lastSaleDate: lastSale ? lastSale.timestamp.slice(0, 10) : null,
+      bucket,
+      tiedUpValue: stock * p.unitCost,
+    });
+  }
+
+  return rows.sort((a, b) => (b.daysSinceLastSale ?? Infinity) - (a.daysSinceLastSale ?? Infinity));
+}
