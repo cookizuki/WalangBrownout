@@ -10,6 +10,7 @@ import { roleLabel, useSession, type Role } from "@/lib/auth";
 import { CountUp } from "@/components/CountUp";
 import { AnimatedItem } from "@/components/AnimatedList";
 import { AdminPage, PurchaseOrderApprovalsPage, ProductCatalogPage, SupplierLocationsPage } from "@/components/AdminPage";
+import { PermissionMatrixPage } from "@/components/PermissionMatrixPage";
 import { StockCountsPage, TransactionLogPage, BatchesPage } from "@/components/ops-pages";
 import {
   Th, Td, SectionLabel, Panel, TaskPill, StatusPill, AnimatedRow,
@@ -31,7 +32,7 @@ import {
   LayoutDashboard, Package, Layers, Bell, CalendarCheck2, ClipboardList,
   History, ShoppingCart, Boxes, Truck, ShieldCheck, BarChart3, Receipt,
   TrendingDown, Sun, Clock, Scale, LogOut, RefreshCw, AlertTriangle,
-  FileCheck2, Tags, Warehouse,
+  FileCheck2, Tags, Warehouse, KeyRound,
   type LucideIcon,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -58,7 +59,7 @@ type Tab =
   | "overview" | "inventory" | "batches" | "alerts"
   | "myday" | "counts" | "txlog" | "reorder"
   | "picks" | "receiving" | "admin" | "reports" | "salesorders"
-  | "poapprovals" | "products" | "suppliers";
+  | "poapprovals" | "products" | "suppliers" | "permissions";
 
 const PAGE_META: Record<Tab, { title: string; subtitle: string }> = {
   overview: { title: "Overview", subtitle: "Real-time status" },
@@ -77,6 +78,7 @@ const PAGE_META: Record<Tab, { title: string; subtitle: string }> = {
   poapprovals: { title: "PO Approvals", subtitle: "Purchase orders awaiting review and approval" },
   products: { title: "Product Catalog", subtitle: "Manage SKUs, cost, and reorder settings" },
   suppliers: { title: "Suppliers & Locations", subtitle: "Supplier directory and warehouse zones" },
+  permissions: { title: "Permission Matrix", subtitle: "What each role can view, create, or execute" },
 };
 const TAB_ICONS: Record<Tab, LucideIcon> = {
   overview: LayoutDashboard,
@@ -95,10 +97,11 @@ const TAB_ICONS: Record<Tab, LucideIcon> = {
   poapprovals: FileCheck2,
   products: Tags,
   suppliers: Warehouse,
+  permissions: KeyRound,
 };
 
 const ROLE_NAV: Record<Role, Tab[]> = {
-  ADMIN: ["overview", "inventory", "batches", "alerts", "salesorders", "reports", "poapprovals", "products", "suppliers", "admin"],
+    ADMIN: ["overview", "inventory", "batches", "alerts", "salesorders", "reports", "poapprovals", "products", "suppliers", "permissions", "admin"],
   INVENTORY_STAFF: ["myday", "inventory", "counts", "txlog", "reorder", "salesorders", "batches", "alerts"],
   WAREHOUSE_STAFF: ["myday", "counts", "picks", "receiving", "batches", "alerts"],
 };
@@ -257,6 +260,7 @@ function Dashboard() {
           {tab === "poapprovals" && account.role === "ADMIN" && <PurchaseOrderApprovalsPage />}
           {tab === "products" && account.role === "ADMIN" && <ProductCatalogPage />}
           {tab === "suppliers" && account.role === "ADMIN" && <SupplierLocationsPage />}
+          {tab === "permissions" && account.role === "ADMIN" && <PermissionMatrixPage />}
           {tab === "admin" && account.role === "ADMIN" && <AdminPage />}
           {tab === "reports" && account.role === "ADMIN" && <ReportsPage />}
           {tab === "salesorders" && <SalesOrdersPage />}
