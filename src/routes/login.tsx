@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { authenticate, listAccounts, roleLabel, ROLES, signIn, DEMO_PASSWORD, type Account, type Role } from "@/lib/auth";
 import { FadeContent } from "@/components/FadeContent";
+import { PasswordInput } from "@/components/PasswordInput";
 import { DotField } from "@/components/DotField";
 import { AuthThemeToggle } from "@/components/AuthThemeToggle";
 import { BlurText } from "@/components/BlurText";
@@ -111,13 +112,12 @@ function LoginPage() {
 
                 <label className="mt-4 block">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Password</span>
-                  <input
-                    type="password"
+                  <PasswordInput
                     value={password}
                     onChange={e => { setPassword(e.target.value); setAutofilled(false); }}
                     placeholder="••••••••••"
                     autoComplete="current-password"
-                    className="mt-1.5 w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary"
+                    className="mt-1.5 rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary"
                   />
                 </label>
 

@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { createAccount, emailTaken, ROLES, signIn, type Role } from "@/lib/auth";
 import { FadeContent } from "@/components/FadeContent";
+import { PasswordInput } from "@/components/PasswordInput";
 import { DotField } from "@/components/DotField";
 import { AuthThemeToggle } from "@/components/AuthThemeToggle";
 import wbLogo from "@/assets/WB LOGO.jpg";
@@ -117,8 +118,7 @@ function SignUpPage() {
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <label className="block">
                 <span className={labelCls}>Password</span>
-                <input
-                  type="password"
+                <PasswordInput
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••••"
@@ -127,8 +127,7 @@ function SignUpPage() {
               </label>
               <label className="block">
                 <span className={labelCls}>Confirm password</span>
-                <input
-                  type="password"
+                <PasswordInput
                   value={confirm}
                   onChange={e => setConfirm(e.target.value)}
                   placeholder="••••••••••"
