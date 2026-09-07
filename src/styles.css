@@ -113,6 +113,15 @@
   * {
     border-color: var(--color-border);
   }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+@layer base {
   html, body {
     background-color: var(--color-background);
     color: var(--color-foreground);

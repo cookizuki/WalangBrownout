@@ -7,7 +7,7 @@ export function AuthThemeToggle() {
   return (
     <button
       type="button"
-      onClick={toggle}
+      onClick={() => toggle()}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       className="fixed left-4 top-4 z-20 grid h-10 w-10 place-items-center rounded-full border border-border bg-surface text-sm shadow-sm transition-colors hover:bg-muted sm:left-6 sm:top-6"
     >
