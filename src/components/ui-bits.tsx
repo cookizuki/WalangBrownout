@@ -1,12 +1,17 @@
 // Shared presentational primitives used across every dashboard page.
 import { useEffect, useState, type ReactNode } from "react";
+import { Clock3, Loader2, CheckCircle2, CircleCheck, CircleAlert, CircleX, type LucideIcon } from "lucide-react";
 
 export function Th({ children }: { children: ReactNode }) {
-  return <th className="px-5 py-3 font-semibold">{children}</th>;
+  return (
+    <th className="sticky top-0 z-10 bg-card px-5 py-3 font-semibold backdrop-blur-sm">
+      {children}
+    </th>
+  );
 }
 
 export function Td({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <td className={`px-5 py-3 ${className}`}>{children}</td>;
+  return <td className={`px-5 py-3.5 tabular-nums ${className}`}>{children}</td>;
 }
 
 export function SectionLabel({ children }: { children: ReactNode }) {
@@ -14,15 +19,19 @@ export function SectionLabel({ children }: { children: ReactNode }) {
 }
 
 export function Panel({
-  title, right, children, footer,
-}: { title: string; right?: ReactNode; children: ReactNode; footer?: string }) {
+  title, right, children, footer, icon: Icon,
+}: { title: string; right?: ReactNode; children: ReactNode; footer?: string; icon?: LucideIcon }) {
   return (
-    <div className="card-surface overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
-        
-        {/* Replaced text-sm with text-xl and font-bold */}
-        <h2 className="text-xl font-bold text-foreground">{title}</h2>
-        
+    <div className="card-surface overflow-hidden transition-shadow hover:shadow-sm">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3.5">
+        <div className="flex items-center gap-2.5">
+          {Icon && (
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+              <Icon className="h-4 w-4" strokeWidth={2} />
+            </span>
+          )}
+          <h2 className="text-lg font-bold text-foreground">{title}</h2>
+        </div>
         {right}
       </div>
       {children}
@@ -33,13 +42,14 @@ export function Panel({
 
 export function TaskPill({ status }: { status: "PENDING" | "IN_PROGRESS" | "DONE" }) {
   const map = {
-    PENDING: "border-warning/50 text-warning",
-    IN_PROGRESS: "border-info/50 text-info",
-    DONE: "border-success/40 text-success",
+    PENDING: { cls: "border-warning/50 text-warning", icon: Clock3 },
+    IN_PROGRESS: { cls: "border-info/50 text-info", icon: Loader2 },
+    DONE: { cls: "border-success/40 text-success", icon: CheckCircle2 },
   } as const;
+  const { cls, icon: Icon } = map[status];
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold ${map[status]}`}>
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold ${cls}`}>
+      <Icon className={`h-3 w-3 ${status === "IN_PROGRESS" ? "animate-spin" : ""}`} strokeWidth={2.5} />
       {titleCase(status)}
     </span>
   );
@@ -47,13 +57,14 @@ export function TaskPill({ status }: { status: "PENDING" | "IN_PROGRESS" | "DONE
 
 export function StatusPill({ status }: { status: "OK" | "WATCH" | "REORDER" }) {
   const map = {
-    OK: "border-success/40 text-success",
-    WATCH: "border-warning/50 text-warning",
-    REORDER: "border-danger/50 text-danger",
+    OK: { cls: "border-success/40 text-success", icon: CircleCheck },
+    WATCH: { cls: "border-warning/50 text-warning", icon: CircleAlert },
+    REORDER: { cls: "border-danger/50 text-danger", icon: CircleX },
   } as const;
+  const { cls, icon: Icon } = map[status];
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold ${map[status]}`}>
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold ${cls}`}>
+      <Icon className="h-3 w-3" strokeWidth={2.5} />
       {status}
     </span>
   );
@@ -101,4 +112,17 @@ export function TimeAgo({ iso }: { iso: string }) {
 
 export function titleCase(s: string) {
   return s.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
+export function EmptyState({
+  icon: Icon, message, className = "",
+}: { icon: LucideIcon; message: string; className?: string }) {
+  return (
+    <div className={`flex flex-col items-center justify-center gap-2.5 px-4 py-10 text-center ${className}`}>
+      <span className="grid h-11 w-11 place-items-center rounded-full bg-muted text-muted-foreground">
+        <Icon className="h-5 w-5" strokeWidth={1.75} />
+      </span>
+      <p className="text-sm text-muted-foreground">{message}</p>
+    </div>
+  );
 }

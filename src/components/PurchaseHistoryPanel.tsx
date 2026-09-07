@@ -2,7 +2,7 @@ import { useState } from "react";
 import { products, money } from "@/lib/inventory-data";
 import { usePurchaseHistory, useCostSummary } from "@/lib/ops-store";
 import { Th, Td } from "@/components/ui-bits";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Receipt } from "lucide-react";
 
 const TREND_ICON = { up: TrendingUp, down: TrendingDown, same: Minus } as const;
 const TREND_LABEL = { up: "Above average", down: "Below average", same: "At average" } as const;
@@ -19,9 +19,14 @@ export function PurchaseHistoryPanel() {
   return (
     <div className="card-surface overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
-        <div>
-          <h2 className="text-lg font-semibold">Purchase History</h2>
-          <p className="text-xs text-muted-foreground">Every completed delivery for a SKU — supplier, quantity, date, price</p>
+        <div className="flex items-center gap-2.5">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+            <Receipt className="h-4 w-4" strokeWidth={2} />
+          </span>
+          <div>
+            <h2 className="text-lg font-semibold">Purchase History</h2>
+            <p className="text-xs text-muted-foreground">Every completed delivery for a SKU — supplier, quantity, date, price</p>
+          </div>
         </div>
         <select
           value={sku}

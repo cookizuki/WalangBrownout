@@ -58,13 +58,16 @@ function LoginPage() {
 
       <div className="relative z-10 mx-auto w-full max-w-4xl">
         <FadeContent>
-          <div className="flex flex-col items-center text-center">
-            <img src={wbLogo} alt="WalangBrownout logo" className="h-12 w-12 rounded-xl object-contain" />
+          <div className="flex flex-col items-center gap-2 text-center">
+            <img src={wbLogo} alt="WalangBrownout logo" className="h-11 w-11 rounded-xl object-contain shadow-sm" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              WalangBrownout Inventory OS
+            </span>
           </div>
         </FadeContent>
 
         <FadeContent delay={60}>
-          <div className="mt-6 flex overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+          <div className="mt-4 flex overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
             {/* Left panel — product gallery */}
             <div className="hidden w-1/2 md:block" style={{ height: 560 }}>
               <DriftWall
@@ -89,7 +92,7 @@ function LoginPage() {
               <form onSubmit={submit} className="w-full max-w-sm">
                 <div className="text-center">
                   <h1 className="font-display text-2xl font-semibold sm:text-3xl">Log In</h1>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="mt-2.5 text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
                     <BlurText text="Walang Kulang, Walang Sobra." delay={300} />
                   </p>
                 </div>

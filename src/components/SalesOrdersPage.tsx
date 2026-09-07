@@ -1,16 +1,20 @@
 import { Fragment, useMemo, useState } from "react";
 import { products, locations } from "@/lib/inventory-data";
 import { useSalesOrders } from "@/lib/ops-store";
-import { Panel, SectionLabel, Th, Td, TaskPill, AnimatedRow } from "@/components/ui-bits";
+import { Panel, SectionLabel, Th, Td, TaskPill, AnimatedRow, EmptyState } from "@/components/ui-bits";
+import { PackageSearch, ArrowUp, Minus, ArrowDown } from "lucide-react";
 import type { Priority } from "@/lib/inventory-data";
 
 const productName = (sku: string) => products.find(p => p.sku === sku)?.name ?? sku;
 const locCode = (id: number) => locations.find(l => l.id === id)?.code ?? "—";
 
+const PRIORITY_ICON = { HIGH: ArrowUp, NORMAL: Minus, LOW: ArrowDown } as const;
+
 function PriorityBadge({ priority }: { priority: Priority }) {
+  const Icon = PRIORITY_ICON[priority];
   return (
     <span
-      className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
         priority === "HIGH"
           ? "border-danger/50 text-danger"
           : priority === "NORMAL"
@@ -18,6 +22,7 @@ function PriorityBadge({ priority }: { priority: Priority }) {
           : "border-dashed border-border text-muted-foreground"
       }`}
     >
+      <Icon className="h-3 w-3" strokeWidth={2.5} />
       {priority}
     </span>
   );
@@ -115,8 +120,8 @@ export function SalesOrdersPage() {
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-muted-foreground">
-                    No sales orders match this search.
+                  <td colSpan={6}>
+                    <EmptyState icon={PackageSearch} message="No sales orders match this search." />
                   </td>
                 </tr>
               )}

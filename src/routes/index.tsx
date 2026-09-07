@@ -14,7 +14,7 @@ import { PermissionMatrixPage } from "@/components/PermissionMatrixPage";
 import { StockCountsPage, TransactionLogPage, BatchesPage } from "@/components/ops-pages";
 import {
   Th, Td, SectionLabel, Panel, TaskPill, StatusPill, AnimatedRow,
-  TimeAgo, daysLeft, titleCase,
+  TimeAgo, daysLeft, titleCase, EmptyState,
 } from "@/components/ui-bits";
 import { DraftPOAction } from "@/components/DraftPOAction";
 import { useOps, useAlerts, acknowledgeAlert, usePurchaseOrderStatuses } from "@/lib/ops-store";
@@ -32,7 +32,8 @@ import {
   LayoutDashboard, Package, Layers, Bell, CalendarCheck2, ClipboardList,
   History, ShoppingCart, Boxes, Truck, ShieldCheck, BarChart3, Receipt,
   TrendingDown, Sun, Clock, Scale, LogOut, RefreshCw, AlertTriangle,
-  FileCheck2, Tags, Warehouse, KeyRound,
+  FileCheck2, Tags, Warehouse, KeyRound, CheckCircle2, Inbox,
+  ArrowUp, Minus, ArrowDown,
   type LucideIcon,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -469,24 +470,18 @@ function OverviewPage({ query, alerts, onAck }: { query: string; alerts: Alert[]
                 <AlertCard key={a.id} alert={a} onAck={onAck} compact />
               ))}
               <EmptyState
-                label={
+                icon={alerts.length === 0 ? CheckCircle2 : Inbox}
+                message={
                   alerts.length === 0
                     ? "All clear · nothing to reorder"
                     : "No other alerts — you're all caught up"
                 }
+                className="flex-1"
               />
             </div>
           </div>
         </div>
       </section>
-    </div>
-  );
-}
-
-function EmptyState({ label }: { label: string }) {
-  return (
-    <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-border px-4 py-6 text-center text-xs text-muted-foreground">
-      {label}
     </div>
   );
 }
@@ -547,7 +542,10 @@ function InventoryPage({ query, canExport = false }: { query: string; canExport?
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-xl font-bold text-foreground">Product Table Panel</h2>
+        <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
+          <Package className="h-5 w-5 text-muted-foreground" strokeWidth={2} />
+          Product Table Panel
+        </h2>
         {canExport && (
           <button
             onClick={exportCSV}
@@ -596,11 +594,15 @@ function InventoryPage({ query, canExport = false }: { query: string; canExport?
               const ratio = Math.min(qty / Math.max(rop, 1), 1.5);
               const status = qty <= rop ? "REORDER" : ratio < 1.35 ? "WATCH" : "OK";
               return (
-                <AnimatedRow key={`${pill}-${p.sku}`} delay={i * 50}>
-                  <Td className="font-mono text-xs">{p.sku}</Td>
+                <AnimatedRow
+                  key={`${pill}-${p.sku}`}
+                  delay={i * 50}
+                  className={i % 2 === 1 ? "bg-muted/20" : ""}
+                >
+                  <Td className="font-mono text-xs text-muted-foreground">{p.sku}</Td>
                   <Td className="font-medium">{p.name}</Td>
                   <Td>
-                    <span className="inline-grid h-6 w-6 place-items-center rounded border border-border text-[11px] font-semibold">
+                    <span className="inline-grid h-6 w-6 place-items-center rounded-md border border-border bg-muted text-[11px] font-semibold">
                       {p.abc}
                     </span>
                   </Td>
@@ -673,10 +675,15 @@ function AlertsPage({ alerts, onAck }: { alerts: Alert[]; onAck: (id: string) =>
           ))}
         </ul>
         <div className="px-5 pb-5 pt-1">
-          <div className="flex min-h-32 items-center justify-center rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-            {alerts.length === 0
-              ? "Nothing to reorder or expire soon. Enjoy the calm."
-              : "No other alerts — you're all caught up"}
+          <div className="min-h-32 rounded-lg border border-dashed border-border">
+            <EmptyState
+              icon={alerts.length === 0 ? CheckCircle2 : Inbox}
+              message={
+                alerts.length === 0
+                  ? "Nothing to reorder or expire soon. Enjoy the calm."
+                  : "No other alerts — you're all caught up"
+              }
+            />
           </div>
         </div>
         <p className="border-t border-border px-5 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -1016,11 +1023,12 @@ function PickTasksPage() {
                     <Td className="font-mono">{t.quantity}</Td>
                     <Td className="font-mono text-xs text-muted-foreground">{t.orderRef}</Td>
                     <Td>
-                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+                      <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
                         t.priority === "HIGH" ? "border-danger/50 text-danger"
                         : t.priority === "NORMAL" ? "border-border text-muted-foreground"
                         : "border-dashed border-border text-muted-foreground"
                       }`}>
+                        {t.priority === "HIGH" ? <ArrowUp className="h-3 w-3" strokeWidth={2.5} /> : t.priority === "NORMAL" ? <Minus className="h-3 w-3" strokeWidth={2.5} /> : <ArrowDown className="h-3 w-3" strokeWidth={2.5} />}
                         {t.priority}
                       </span>
                     </Td>

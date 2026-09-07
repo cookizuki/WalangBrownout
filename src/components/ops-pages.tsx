@@ -5,7 +5,8 @@ import {
   locations, products, type TxType,
 } from "@/lib/inventory-data";
 import { fifoBatches, reportAdjustment, submitCount, useOps, type AdjustmentReason, requestRecount } from "@/lib/ops-store";
-import { AnimatedRow, Panel, SectionLabel, TaskPill, Td, Th, TimeAgo, daysLeft, titleCase } from "@/components/ui-bits";
+import { AnimatedRow, Panel, SectionLabel, TaskPill, Td, Th, TimeAgo, daysLeft, titleCase, EmptyState } from "@/components/ui-bits";
+import { CheckCircle2 } from "lucide-react";
 import { GlareHover } from "@/components/GlareHover";
 import { TxTypeBadge } from "@/lib/tx-type-styles";
 
@@ -220,7 +221,7 @@ export function TransactionLogPage() {
                 </AnimatedRow>
               ))}
               {rows.length === 0 && (
-                <tr><td colSpan={8} className="px-5 py-10 text-center text-sm text-muted-foreground">No transactions match this filter.</td></tr>
+                <tr><td colSpan={8}><EmptyState icon={CheckCircle2} message="No transactions match this filter." /></td></tr>
               )}
             </tbody>
           </table>

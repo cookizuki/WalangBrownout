@@ -11,6 +11,7 @@ import { LocationSetupWidget } from "@/components/LocationSetupWidget";
 import { toast } from "sonner";
 import { EditUserModal } from "@/components/EditUserModal";
 import { PODraftPreviewModal, type PODraftPreviewData } from "@/components/PODraftPreviewModal";
+import { Users as Users2 } from "lucide-react";
 
 const initials = (name: string) =>
   name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
@@ -33,9 +34,14 @@ export function AdminPage() {
         </p>
         <div className="card-surface">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
-            <div>
-              <h2 className="text-lg font-semibold">Users</h2>
-              <p className="text-xs text-muted-foreground">Manage accounts, roles, and access</p>
+            <div className="flex items-center gap-2.5">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                <Users2 className="h-4 w-4" strokeWidth={2} />
+              </span>
+              <div>
+                <h2 className="text-lg font-semibold">Users</h2>
+                <p className="text-xs text-muted-foreground">Manage accounts, roles, and access</p>
+              </div>
             </div>
             <button
               onClick={() => setShowForm(v => !v)}
@@ -87,7 +93,7 @@ export function AdminPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {accounts.map((a, i) => (
-                  <AnimatedRow key={a.id} delay={i * 60}>
+                  <AnimatedRow key={a.id} delay={i * 60} className={i % 2 === 1 ? "bg-muted/20" : ""}>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
                         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold">
@@ -211,7 +217,7 @@ function AddUserForm({ onCreate }: { onCreate: (a: Account) => void }) {
   );
 }
 
-function AnimatedRow({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
+function AnimatedRow({ children, delay = 0, className = "" }: { children: ReactNode; delay?: number; className?: string }) {
   const [shown, setShown] = useState(false);
   useEffect(() => {
     const t = window.setTimeout(() => setShown(true), delay);
@@ -221,7 +227,7 @@ function AnimatedRow({ children, delay = 0 }: { children: ReactNode; delay?: num
     <tr
       className={`transition-all duration-300 ease-out hover:bg-muted/50 motion-reduce:transition-none ${
         shown ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"
-      }`}
+      } ${className}`}
     >
       {children}
     </tr>

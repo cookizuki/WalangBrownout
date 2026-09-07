@@ -1,4 +1,5 @@
 import type { TxType } from "@/lib/inventory-data";
+import { ShoppingCart, PackagePlus, Undo2, SlidersHorizontal, ArrowLeftRight, Ban, type LucideIcon } from "lucide-react";
 
 /**
  * Consistent, muted color treatment per transaction type — used anywhere a
@@ -6,20 +7,21 @@ import type { TxType } from "@/lib/inventory-data";
  * Colors are theme-token based (not hardcoded hex) so they stay correct
  * in both light and dark mode.
  */
-export const TX_TYPE_STYLES: Record<TxType, { bg: string; text: string; dot: string; label: string }> = {
-  SALE:       { bg: "bg-info/10",     text: "text-info",     dot: "bg-info",     label: "Sale" },
-  RECEIPT:    { bg: "bg-success/10",  text: "text-success",  dot: "bg-success",  label: "Receipt" },
-  RETURN:     { bg: "bg-success/10",  text: "text-success",  dot: "bg-success",  label: "Return" },
-  ADJUSTMENT: { bg: "bg-warning/10",  text: "text-warning",  dot: "bg-warning",  label: "Adjustment" },
-  TRANSFER:   { bg: "bg-muted",       text: "text-muted-foreground", dot: "bg-muted-foreground", label: "Transfer" },
-  WRITE_OFF:  { bg: "bg-danger/10",   text: "text-danger",   dot: "bg-danger",   label: "Write-Off" },
+export const TX_TYPE_STYLES: Record<TxType, { bg: string; text: string; dot: string; label: string; icon: LucideIcon }> = {
+  SALE:       { bg: "bg-info/10",     text: "text-info",     dot: "bg-info",     label: "Sale",       icon: ShoppingCart },
+  RECEIPT:    { bg: "bg-success/10",  text: "text-success",  dot: "bg-success",  label: "Receipt",    icon: PackagePlus },
+  RETURN:     { bg: "bg-success/10",  text: "text-success",  dot: "bg-success",  label: "Return",     icon: Undo2 },
+  ADJUSTMENT: { bg: "bg-warning/10",  text: "text-warning",  dot: "bg-warning",  label: "Adjustment", icon: SlidersHorizontal },
+  TRANSFER:   { bg: "bg-muted",       text: "text-muted-foreground", dot: "bg-muted-foreground", label: "Transfer", icon: ArrowLeftRight },
+  WRITE_OFF:  { bg: "bg-danger/10",   text: "text-danger",   dot: "bg-danger",   label: "Write-Off",  icon: Ban },
 };
 
 export function TxTypeBadge({ type }: { type: TxType }) {
   const s = TX_TYPE_STYLES[type];
+  const Icon = s.icon;
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ${s.bg} ${s.text}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+      <Icon className="h-3 w-3" strokeWidth={2.5} />
       {s.label}
     </span>
   );

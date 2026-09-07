@@ -9,6 +9,9 @@ import { useChartColors } from "@/hooks/use-chart-colors";
 import { Th, Td } from "@/components/ui-bits";
 import { PurchaseHistoryPanel } from "@/components/PurchaseHistoryPanel";
 import { computeDeadStock, computeValuation, computeTurnover } from "@/lib/ops-store";
+import {
+  TrendingDown, LineChart, Wallet, RotateCcw, PackageX, Truck, Receipt,
+} from "lucide-react";
 
 const MONTH_LABELS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -135,7 +138,12 @@ export function ReportsPage() {
         </p>
         <div className="card-surface overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-4">
-            <h2 className="text-lg font-semibold">End-of-Month Shrinkage</h2>
+            <h2 className="flex items-center gap-2.5 text-lg font-semibold">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                <TrendingDown className="h-4 w-4" strokeWidth={2} />
+              </span>
+              End-of-Month Shrinkage
+            </h2>
             <span className="rounded-full border border-danger/40 px-3 py-1 text-[11px] font-semibold text-danger">
               {money(totalShrinkageCost)} total
             </span>
@@ -167,7 +175,12 @@ export function ReportsPage() {
         </p>
         <div className="card-surface overflow-hidden">
           <div className="border-b border-border px-5 py-4">
-            <h2 className="text-lg font-semibold">Historical Sales Velocity</h2>
+            <h2 className="flex items-center gap-2.5 text-lg font-semibold">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                <LineChart className="h-4 w-4" strokeWidth={2} />
+              </span>
+              Historical Sales Velocity
+            </h2>
           </div>
           <div className="px-3 py-4">
             {velocityBySku.length === 0 ? (
@@ -212,12 +225,17 @@ export function ReportsPage() {
         </p>
         <div className="card-surface overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-4">
-            <h2 className="text-sm font-semibold">Inventory Valuation</h2>
+            <h2 className="flex items-center gap-2.5 text-sm font-semibold">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                <Wallet className="h-3.5 w-3.5" strokeWidth={2} />
+              </span>
+              Inventory Valuation
+            </h2>
             <span className="rounded-full border border-info/40 px-3 py-1 text-[11px] font-semibold text-info">
               {money(valuation.totalValue)} total
             </span>
           </div>
-          <div className="grid gap-4 p-5 sm:grid-cols-3">
+          <div className="grid gap-3 p-5 sm:grid-cols-3">
             {valuation.byClass.map(row => {
               const pct = valuation.totalValue > 0 ? (row.value / valuation.totalValue) * 100 : 0;
               return (
@@ -247,7 +265,12 @@ export function ReportsPage() {
         </p>
         <div className="card-surface overflow-hidden">
           <div className="border-b border-border px-5 py-4">
-            <h2 className="text-sm font-semibold">Inventory Turnover</h2>
+            <h2 className="flex items-center gap-2.5 text-sm font-semibold">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
+              </span>
+              Inventory Turnover
+            </h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-150 text-sm">
@@ -291,7 +314,12 @@ export function ReportsPage() {
         </p>
         <div className="card-surface overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-4">
-            <h2 className="text-sm font-semibold">Dead / Slow-Moving Stock</h2>
+            <h2 className="flex items-center gap-2.5 text-sm font-semibold">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                <PackageX className="h-3.5 w-3.5" strokeWidth={2} />
+              </span>
+              Dead / Slow-Moving Stock
+            </h2>
             <span className="rounded-full border border-warning/40 px-3 py-1 text-[11px] font-semibold text-warning">
               {money(totalTiedUp)} tied up
             </span>
@@ -350,7 +378,12 @@ export function ReportsPage() {
         </p>
         <div className="card-surface overflow-hidden">
           <div className="border-b border-border px-5 py-4">
-            <h2 className="text-lg font-semibold">Supplier Reliability</h2>
+            <h2 className="flex items-center gap-2.5 text-lg font-semibold">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                <Truck className="h-4 w-4" strokeWidth={2} />
+              </span>
+              Supplier Reliability
+            </h2>
           </div>
           <div className="px-3 py-4">
             {supplierPerf.length === 0 ? (
