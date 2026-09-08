@@ -15,11 +15,11 @@
   --dw-overlay: #060010;
   --dw-edge: 40%;
   -webkit-mask-image:
-    radial-gradient(ellipse 78% 82% at 50% 46%, #000 var(--dw-edge), transparent 100%),
+    radial-gradient(ellipse 110% 105% at 50% 46%, #000 var(--dw-edge), transparent 100%),
     linear-gradient(to top, #000 var(--dw-edge), transparent 100%);
   -webkit-mask-composite: source-in;
   mask-image:
-    radial-gradient(ellipse 78% 82% at 50% 46%, #000 var(--dw-edge), transparent 100%),
+    radial-gradient(ellipse 110% 105% at 50% 46%, #000 var(--dw-edge), transparent 100%),
     linear-gradient(to top, #000 var(--dw-edge), transparent 100%);
   mask-composite: intersect;
 }
@@ -118,9 +118,33 @@
     0 0 0 2px rgba(255, 255, 255, 0.9);
 }
 
+.drift-wall__spotlight {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
+  background: radial-gradient(
+    circle 260px at var(--dw-spot-x, 50%) var(--dw-spot-y, 50%),
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.08) 35%,
+    transparent 70%
+  );
+  mix-blend-mode: screen;
+}
+
+.drift-wall:hover .drift-wall__spotlight {
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .drift-wall__plane,
   .drift-wall__track {
     will-change: auto;
+  }
+
+  .drift-wall__spotlight {
+    display: none;
   }
 }

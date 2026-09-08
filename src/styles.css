@@ -151,3 +151,11 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
+
+#TanStackRouterDevtools,
+[data-tanstack-router-devtools],
+button[class*="TanStackRouterDevtools"],
+div[class*="tsrDtPanelButton"],
+div[class*="tsrd-panel-button"] {
+  display: none !important;
+}

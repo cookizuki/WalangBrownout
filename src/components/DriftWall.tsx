@@ -4,6 +4,7 @@ import "./DriftWall.css";
 export interface DriftWallItem {
   image: string;
   title?: string;
+  subtitle?: string;
   href?: string;
 }
 
@@ -29,6 +30,7 @@ interface DriftWallProps {
   dim?: number;
   grayscale?: boolean;
   overlayColor?: string;
+  showTooltip?: boolean;
   className?: string;
   style?: CSSProperties;
 }
@@ -63,6 +65,7 @@ export default function DriftWall({
   dim = 0.55,
   grayscale = false,
   overlayColor = "#060010",
+  showTooltip = false,
   className = "",
   style,
 }: DriftWallProps) {
@@ -83,6 +86,7 @@ export default function DriftWall({
   const [activeId, setActiveId] = useState<string | null>(null);
   const activeIdRef = useRef<string | null>(null);
   const [reduced, setReduced] = useState(false);
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; title: string; subtitle?: string } | null>(null);
 
   useEffect(() => {
     setReduced(prefersReducedMotion());
@@ -206,29 +210,52 @@ export default function DriftWall({
     (e: React.PointerEvent<HTMLDivElement>) => {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
+
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      containerRef.current?.style.setProperty("--dw-spot-x", `${px}px`);
+      containerRef.current?.style.setProperty("--dw-spot-y", `${py}px`);
+
       if (parallax > 0 && !reduced) {
         pointerRef.current = {
-          x: (e.clientX - rect.left) / rect.width - 0.5,
-          y: (e.clientY - rect.top) / rect.height - 0.5,
+          x: px / rect.width - 0.5,
+          y: py / rect.height - 0.5,
         };
       }
       const hit = document.elementFromPoint(e.clientX, e.clientY);
       const tile = hit?.closest<HTMLElement>("[data-tile-id]");
-      if (!tile) return;
+      if (!tile) {
+        if (showTooltip) setTooltip(null);
+        return;
+      }
       const id = tile.dataset.tileId!;
       if (id === activeIdRef.current) return;
       activeIdRef.current = id;
       hoveredColRef.current = Number(tile.dataset.col);
       setActiveId(id);
+
+      if (showTooltip) {
+        const [colStr, , itemIdxStr] = id.split("-");
+        const item = columnItems[Number(colStr)]?.[Number(itemIdxStr)];
+        if (item) {
+          setTooltip({
+            x: px,
+            y: py,
+            title: item.title ?? "",
+            subtitle: item.subtitle,
+          });
+        }
+      }
     },
-    [parallax, reduced],
+    [parallax, reduced, showTooltip, columnItems],
   );
 
   const handlePointerLeaveWall = useCallback(() => {
     wallHoveredRef.current = false;
     pointerRef.current = { x: 0, y: 0 };
+    if (showTooltip) setTooltip(null);
     release();
-  }, [release]);
+  }, [release, showTooltip]);
 
   const cssVars = useMemo(
     () =>
@@ -289,6 +316,7 @@ export default function DriftWall({
       role="group"
       aria-label="Drifting wall of tiles"
     >
+      <div className="drift-wall__spotlight" aria-hidden="true" />
       <div ref={planeRef} className="drift-wall__plane">
         {columnItems.map((col, c) => {
           const meta = columnMeta[c];
@@ -304,6 +332,18 @@ export default function DriftWall({
           );
         })}
       </div>
+
+      {showTooltip && tooltip && (
+        <div
+          className="pointer-events-none absolute z-20 rounded-xl bg-white px-3.5 py-2.5 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.45)] ring-1 ring-black/6"
+          style={{ left: tooltip.x - 8, top: tooltip.y - 14, transform: "translateY(-100%)" }}
+        >
+          <p className="text-[13px] font-semibold leading-snug text-gray-900">{tooltip.title}</p>
+          {tooltip.subtitle && (
+            <p className="mt-0.5 text-[11px] font-medium text-gray-400">{tooltip.subtitle}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

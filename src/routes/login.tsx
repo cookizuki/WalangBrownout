@@ -2,12 +2,12 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { authenticate, listAccounts, roleLabel, ROLES, signIn, DEMO_PASSWORD, type Account, type Role } from "@/lib/auth";
 import { FadeContent } from "@/components/FadeContent";
-import { PasswordInput } from "@/components/PasswordInput";
 import { DotField } from "@/components/DotField";
 import { AuthThemeToggle } from "@/components/AuthThemeToggle";
 import { BlurText } from "@/components/BlurText";
 import DriftWall from "@/components/DriftWall";
 import { PRODUCT_TILES } from "@/lib/product-tiles";
+import { PasswordInput } from "@/components/PasswordInput";
 import wbLogo from "@/assets/WB LOGO.jpg";
 
 export const Route = createFileRoute("/login")({
@@ -53,111 +53,115 @@ function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-muted/40 px-4 py-10 sm:px-6 sm:py-16">
-      <DotField />
-      <AuthThemeToggle />
-
-      <div className="relative z-10 mx-auto w-full max-w-4xl">
-        <FadeContent>
-          <div className="flex flex-col items-center gap-2 text-center">
-            <img src={wbLogo} alt="WalangBrownout logo" className="h-11 w-11 rounded-xl object-contain shadow-sm" />
-            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              WalangBrownout Inventory OS
-            </span>
-          </div>
-        </FadeContent>
-
-        <FadeContent delay={60}>
-          <div className="mt-4 flex overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
-            {/* Left panel — product gallery */}
-            <div className="hidden w-1/2 md:block" style={{ height: 560 }}>
-              <DriftWall
-                items={PRODUCT_TILES}
-                columns={3}
-                tileWidth={160}
-                tileHeight={110}
-                gap={14}
-                radius={12}
-                speed={26}
-                variance={0.4}
-                parallax={0.5}
-                lift={40}
-                fade={0.55}
-                dim={0.6}
-                overlayColor="#0a0a0b"
-              />
-            </div>
-
-            {/* Right panel — login form */}
-            <div className="flex w-full items-center justify-center border-l border-border p-6 md:w-1/2 sm:p-8">
-              <form onSubmit={submit} className="w-full max-w-sm">
-                <div className="text-center">
-                  <h1 className="font-display text-2xl font-semibold sm:text-3xl">Log In</h1>
-                  <p className="mt-2.5 text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
-                    <BlurText text="Walang Kulang, Walang Sobra." delay={300} />
-                  </p>
-                </div>
-
-                <label className="mt-6 block">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Email</span>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => { setEmail(e.target.value); setAutofilled(false); }}
-                    placeholder="kim@walangbrownout.ph"
-                    autoComplete="email"
-                    className="mt-1.5 w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary"
-                  />
-                </label>
-
-                <label className="mt-4 block">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Password</span>
-                  <PasswordInput
-                    value={password}
-                    onChange={e => { setPassword(e.target.value); setAutofilled(false); }}
-                    placeholder="••••••••••"
-                    autoComplete="current-password"
-                    className="mt-1.5 rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary"
-                  />
-                </label>
-
-                {autofilled && (
-                  <p className="mt-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                    Auto-filled from demo account → click Log In to continue
-                  </p>
-                )}
-
-                {error && <p className="mt-3 text-xs font-medium text-danger">{error}</p>}
-
-                <button
-                  type="submit"
-                  className="mt-5 w-full rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90"
-                >
-                  Log In
-                </button>
-
-                <p className="mt-5 text-center text-xs text-muted-foreground">
-                  No account yet?{" "}
-                  <Link to="/signup" className="font-semibold text-foreground underline underline-offset-2">
-                    Sign up
-                  </Link>
-                </p>
-
-                <div className="mt-6 border-t border-dashed border-border pt-5 text-center">
-                  <button
-                    type="button"
-                    onClick={() => setDemoOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full bg-foreground" />
-                    Try a demo account
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </FadeContent>
+    <div className="relative flex min-h-screen w-full overflow-hidden">
+      {/* Left panel — full-bleed product gallery */}
+4      <div className="relative hidden w-1/2 bg-[#16181c] md:block">
+        <DriftWall
+          items={PRODUCT_TILES}
+          columns={5}
+          tileWidth={160}
+          tileHeight={115}
+          gap={12}
+          radius={12}
+          tilt={18}
+          turn={-14}
+          depth={120}
+          perspective={1100}
+          speed={28}
+          variance={0.38}
+          parallax={0.55}
+          lift={44}
+          fade={0.55}
+          dim={0.48}
+          overlayColor="#16181c"
+          showTooltip
+        />
       </div>
+
+      {/* Right panel — animated dotted background + form */}
+      <div className="relative flex w-full items-center justify-center overflow-hidden bg-muted/40 px-4 py-10 sm:px-6 md:w-1/2">
+        <DotField />
+
+        <div className="relative z-10 w-full max-w-sm">
+          <FadeContent>
+            <div className="flex flex-col items-center gap-2 text-center">
+              <img src={wbLogo} alt="WalangBrownout logo" className="h-11 w-11 rounded-xl object-contain shadow-sm" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                WalangBrownout Inventory OS
+              </span>
+            </div>
+          </FadeContent>
+
+          <FadeContent delay={60}>
+            <form onSubmit={submit} className="mt-6">
+              <div className="text-center">
+                <h1 className="font-display text-2xl font-semibold sm:text-3xl">Log In</h1>
+                <p className="mt-2.5 text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
+                  <BlurText text="Walang Kulang, Walang Sobra." delay={300} />
+                </p>
+              </div>
+
+              <label className="mt-6 block">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Email</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => { setEmail(e.target.value); setAutofilled(false); }}
+                  placeholder="kim@walangbrownout.ph"
+                  autoComplete="email"
+                  className="mt-1.5 w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary"
+                />
+              </label>
+
+              <label className="mt-4 block">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Password</span>
+                <PasswordInput
+                  value={password}
+                  onChange={e => { setPassword(e.target.value); setAutofilled(false); }}
+                  placeholder="••••••••••"
+                  autoComplete="current-password"
+                  className="mt-1.5 rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary"
+                />
+              </label>
+
+              {autofilled && (
+                <p className="mt-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  Auto-filled from demo account → click Log In to continue
+                </p>
+              )}
+
+              {error && <p className="mt-3 text-xs font-medium text-danger">{error}</p>}
+
+              <button
+                type="submit"
+                className="mt-5 w-full rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90"
+              >
+                Log In
+              </button>
+
+              <p className="mt-5 text-center text-xs text-muted-foreground">
+                No account yet?{" "}
+                <Link to="/signup" className="font-semibold text-foreground underline underline-offset-2">
+                  Sign up
+                </Link>
+              </p>
+
+              <div className="mt-6 border-t border-dashed border-border pt-5 text-center">
+                <button
+                  type="button"
+                  onClick={() => setDemoOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-foreground" />
+                  Try a demo account
+                </button>
+              </div>
+            </form>
+          </FadeContent>
+        </div>
+      </div>
+
+      <AuthThemeToggle />
 
       {demoOpen && <DemoCredentialsModal onClose={() => setDemoOpen(false)} onPick={fillFrom} />}
     </div>
