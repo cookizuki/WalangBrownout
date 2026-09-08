@@ -24,9 +24,9 @@ export const Route = createFileRoute("/signup")({
   component: SignUpPage,
 });
 
-const labelCls = "text-[10px] font-semibold uppercase tracking-widest text-muted-foreground";
+const labelCls = "mb-1.5 block text-xs font-bold uppercase tracking-widest text-muted-foreground transition-colors group-focus-within:text-foreground";
 const inputCls =
-  "mt-1.5 w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary";
+  "w-full rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none transition-all duration-200 focus:border-foreground/60 focus:bg-background focus:shadow-[0_0_0_3px_hsl(var(--foreground)/0.08)]";
 
 function SignUpPage() {
   const navigate = useNavigate();
@@ -63,7 +63,7 @@ function SignUpPage() {
 
   return (
     <div className="relative flex min-h-screen w-full overflow-hidden">
-      {/* Left panel — full-bleed product gallery, shared with Login for consistency */}
+      {/* Left panel — full-bleed product gallery */}
       <div className="relative hidden w-1/2 bg-[#16181c] md:block">
         <DriftWall
           items={PRODUCT_TILES}
@@ -87,132 +87,156 @@ function SignUpPage() {
         />
       </div>
 
-      {/* Right panel — animated dotted background + form */}
-      <div className="relative flex w-full items-center justify-center overflow-hidden bg-muted/40 px-4 py-10 sm:px-6 md:w-1/2">
+      {/* Right panel */}
+      <div className="relative flex w-full items-center justify-center overflow-hidden bg-muted/40 px-4 py-12 sm:px-8 md:w-1/2">
         <DotField />
+
+        {/* Ambient glow blobs */}
+        <div className="pointer-events-none absolute -top-32 -right-32 h-96 w-96 rounded-full bg-foreground/[0.04] blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-foreground/[0.03] blur-2xl" />
 
         <div className="relative z-10 w-full max-w-md">
           <FadeContent>
-            <div className="flex flex-col items-center gap-2 text-center">
-              <img src={wbLogo} alt="WalangBrownout logo" className="h-11 w-11 rounded-xl object-contain shadow-sm" />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                WalangBrownout Inventory OS
-              </span>
+            {/* Top badge */}
+            <div className="flex justify-center">
+              <div className="inline-flex items-center gap-2.5 rounded-full border border-border/80 bg-background/80 px-4 py-1.5 shadow-sm backdrop-blur-sm">
+                <img src={wbLogo} alt="" className="h-5 w-5 rounded-md object-contain" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/60">
+                  WalangBrownout Inventory OS
+                </span>
+              </div>
             </div>
-          </FadeContent>
 
-          <FadeContent delay={60}>
-            <form onSubmit={submit} className="mt-6">
-              <div className="text-center">
-                <h1 className="font-display text-2xl font-semibold sm:text-3xl">Create an account</h1>
-                <p className="mt-2.5 text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
-                  <BlurText text="Walang Kulang, Walang Sobra." delay={300} />
-                </p>
-              </div>
+            {/* Heading */}
+            <div className="mt-6 text-center">
+              <h1 className="text-4xl font-extrabold tracking-tight text-foreground">
+                Create an account
+              </h1>
+              <p className="mt-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                <BlurText text="Walang Kulang, Walang Sobra." delay={300} />
+              </p>
+            </div>
 
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <label className="block">
-                  <span className={labelCls}>First name</span>
-                  <input value={first} onChange={e => setFirst(e.target.value)} maxLength={40} placeholder="Kim" className={inputCls} />
-                </label>
-                <label className="block">
-                  <span className={labelCls}>Last name</span>
-                  <input value={last} onChange={e => setLast(e.target.value)} maxLength={40} placeholder="Maturan" className={inputCls} />
-                </label>
-              </div>
+            {/* Form card */}
+            <div className="mt-8 rounded-2xl border border-border/50 bg-background/80 p-7 shadow-2xl shadow-black/[0.07] backdrop-blur-xl">
+              <form onSubmit={submit} className="space-y-4">
 
-              <label className="mt-4 block">
-                <span className={labelCls}>Email</span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  maxLength={120}
-                  placeholder="kim@walangbrownout.ph"
-                  className={inputCls}
-                />
-              </label>
+                {/* Name row */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="group">
+                    <label className={labelCls}>First name</label>
+                    <input value={first} onChange={e => setFirst(e.target.value)} maxLength={40} placeholder="Kim" className={inputCls} />
+                  </div>
+                  <div className="group">
+                    <label className={labelCls}>Last name</label>
+                    <input value={last} onChange={e => setLast(e.target.value)} maxLength={40} placeholder="Maturan" className={inputCls} />
+                  </div>
+                </div>
 
-              <label className="mt-4 block">
-                <span className={labelCls}>Username</span>
-                <input
-                  value={username}
-                  onChange={e => setUsername(e.target.value)}
-                  maxLength={40}
-                  placeholder="kmaturan"
-                  className={inputCls}
-                />
-              </label>
-
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <label className="block">
-                  <span className={labelCls}>Password</span>
-                  <PasswordInput
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="••••••••••"
+                {/* Email */}
+                <div className="group">
+                  <label className={labelCls}>Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    maxLength={120}
+                    placeholder="you@walangbrownout.ph"
                     className={inputCls}
                   />
-                </label>
-                <label className="block">
-                  <span className={labelCls}>Confirm password</span>
-                  <PasswordInput
-                    value={confirm}
-                    onChange={e => setConfirm(e.target.value)}
-                    placeholder="••••••••••"
+                </div>
+
+                {/* Username */}
+                <div className="group">
+                  <label className={labelCls}>Username</label>
+                  <input
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    maxLength={40}
+                    placeholder="kmaturan"
                     className={inputCls}
                   />
-                </label>
-              </div>
+                </div>
 
-              <div className="mt-5">
-                <p className={labelCls}>Role — select one</p>
-                <div className="mt-2 grid gap-3 sm:grid-cols-3">
-                  {ROLES.map(r => {
-                    const active = role === r.key;
-                    return (
-                      <button
-                        key={r.key}
-                        type="button"
-                        role="radio"
-                        aria-checked={active}
-                        onClick={() => { setRole(r.key); setError(""); }}
-                        className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left transition-colors ${
-                          active
-                            ? "border-foreground bg-foreground text-background"
-                            : "border-dashed border-border hover:bg-muted/50"
-                        }`}
-                      >
-                        <span
-                          className={`grid h-4 w-4 shrink-0 place-items-center rounded-full border ${
-                            active ? "border-background" : "border-border"
+                {/* Password row */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="group">
+                    <label className={labelCls}>Password</label>
+                    <PasswordInput
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="••••••••••"
+                      className={inputCls}
+                    />
+                  </div>
+                  <div className="group">
+                    <label className={labelCls}>Confirm password</label>
+                    <PasswordInput
+                      value={confirm}
+                      onChange={e => setConfirm(e.target.value)}
+                      placeholder="••••••••••"
+                      className={inputCls}
+                    />
+                  </div>
+                </div>
+
+                {/* Role selector */}
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                    Role — select one
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {ROLES.map(r => {
+                      const active = role === r.key;
+                      return (
+                        <button
+                          key={r.key}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          onClick={() => { setRole(r.key); setError(""); }}
+                          className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-200 ${
+                            active
+                              ? "border-foreground bg-foreground text-background shadow-lg"
+                              : "border-border bg-muted/20 hover:border-foreground/30 hover:bg-muted/40"
                           }`}
                         >
-                          {active && <span className="h-1.5 w-1.5 rounded-full bg-background" />}
-                        </span>
-                        <span className="text-sm font-semibold leading-tight">{r.label}</span>
-                      </button>
-                    );
-                  })}
+                          <span
+                            className={`grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 transition-colors ${
+                              active ? "border-background" : "border-border"
+                            }`}
+                          >
+                            {active && <span className="h-1.5 w-1.5 rounded-full bg-background" />}
+                          </span>
+                          <span className="text-sm font-semibold">{r.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
 
-              {error && <p className="mt-4 text-xs font-medium text-danger">{error}</p>}
+                {error && (
+                  <p className="rounded-lg border border-danger/20 bg-danger/5 px-3 py-2 text-xs font-semibold text-danger">
+                    {error}
+                  </p>
+                )}
 
-              <button
-                type="submit"
-                className="mt-5 w-full rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90"
-              >
-                Sign Up
-              </button>
+                <button
+                  type="submit"
+                  className="w-full rounded-xl bg-foreground px-6 py-3.5 text-sm font-bold text-background shadow-lg transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
+                >
+                  Sign Up
+                </button>
+              </form>
+            </div>
 
-              <p className="mt-5 text-center text-xs text-muted-foreground">
-                Already have an account?{" "}
-                <Link to="/login" className="font-semibold text-foreground underline underline-offset-2">
-                  Log in
-                </Link>
-              </p>
-            </form>
+            {/* Footer link */}
+            <p className="mt-6 text-center text-xs text-muted-foreground">
+              Already have an account?{" "}
+              <Link to="/login" className="font-bold text-foreground underline underline-offset-4 decoration-foreground/30 hover:decoration-foreground transition-all">
+                Log in
+              </Link>
+            </p>
           </FadeContent>
         </div>
       </div>

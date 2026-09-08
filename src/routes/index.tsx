@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { roleLabel, useSession, type Role } from "@/lib/auth";
 import { CountUp } from "@/components/CountUp";
 import { AnimatedItem } from "@/components/AnimatedList";
+import { FadeContent } from "@/components/FadeContent";
 import { AdminPage, PurchaseOrderApprovalsPage, ProductCatalogPage, SupplierLocationsPage } from "@/components/AdminPage";
 import { PermissionMatrixPage } from "@/components/PermissionMatrixPage";
 import { StockCountsPage, TransactionLogPage, BatchesPage } from "@/components/ops-pages";
@@ -169,12 +170,12 @@ function Dashboard() {
   );
 
   return (
-    <div className="flex min-h-screen bg-muted/40">
+    <div className="flex min-h-screen bg-background">
       {nav}
 
       {menuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-foreground/40 md:hidden"
+          className="fixed inset-0 z-40 bg-foreground/50 backdrop-blur-sm md:hidden"
           onClick={() => setMenuOpen(false)}
           aria-hidden
         />
@@ -195,53 +196,54 @@ function Dashboard() {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center justify-between gap-3 border-b border-border bg-surface px-4 py-3 md:hidden">
+        {/* Mobile topbar */}
+        <div className="flex items-center justify-between gap-3 border-b border-border bg-surface/80 px-4 py-3 backdrop-blur-md md:hidden">
           <button
             onClick={() => setMenuOpen(true)}
             aria-label="Open navigation"
-            className="relative shrink-0 rounded-md border border-border px-3 py-1.5 text-sm"
+            className="relative shrink-0 rounded-xl border border-border bg-muted/50 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
           >
             ☰
             {openAlerts > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-bold text-background">
+              <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
                 {openAlerts}
               </span>
             )}
           </button>
           <div className="flex min-w-0 items-center justify-end gap-2">
-            <span className="truncate font-semibold">Inventory OS</span>
-            <img
-              src={wbLogo}
-              alt="WalangBrownout logo"
-              className="h-7 w-7 shrink-0 rounded-md object-cover"
-            />
-
+            <span className="truncate text-sm font-bold">Inventory OS</span>
+            <img src={wbLogo} alt="WalangBrownout logo" className="h-7 w-7 shrink-0 rounded-lg object-cover shadow-sm" />
           </div>
         </div>
 
-        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-surface px-4 py-4 sm:px-6 md:flex md:flex-wrap md:gap-4">
+        {/* Desktop header */}
+        <header className="sticky top-0 z-20 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-surface/80 px-4 py-3 backdrop-blur-md sm:px-6 md:flex md:flex-wrap md:gap-4">
           <div className="min-w-0 md:flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               {roleLabel(account.role)}
             </p>
-            <h1 className="truncate font-display text-xl font-semibold leading-tight sm:text-2xl">{meta.title}</h1>
-            <p className="truncate text-xs text-muted-foreground">{meta.subtitle}</p>
+            <h1 className="truncate font-display text-xl font-bold leading-tight tracking-tight sm:text-2xl">{meta.title}</h1>
           </div>
-          <span className="hidden shrink-0 items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[10px] font-medium text-muted-foreground sm:flex">
-            <kbd className="font-sans">ctrl + K</kbd> to search
-          </span>
-          <NotificationBell />
           {showSearch && (
-            <input
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Search…"
-              className="col-span-2 w-full rounded-full border border-border bg-background px-4 py-2 text-sm outline-none focus:border-primary md:order-0 md:col-span-1 md:w-56"
-            />
+            <div className="relative col-span-2 w-full md:col-span-1 md:w-64">
+              <input
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search products, SKUs…"
+                className="w-full rounded-xl border border-border bg-muted/50 py-2 pl-4 pr-4 text-sm outline-none transition-all focus:border-foreground/40 focus:bg-background focus:shadow-[0_0_0_3px_hsl(var(--foreground)/0.06)]"
+              />
+            </div>
           )}
+          <div className="flex items-center gap-2">
+            <span className="hidden items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-[10px] font-semibold text-muted-foreground sm:flex">
+              <kbd className="font-sans">⌘K</kbd>
+            </span>
+            <NotificationBell />
+          </div>
         </header>
 
-        <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6">
+        <main className="flex-1 px-4 py-6 sm:px-6 sm:py-7">
+          <FadeContent key={tab}>
           {tab === "overview" && (
             <OverviewPage query={query} alerts={alerts} onAck={handleAckAlert} />
           )}
@@ -265,6 +267,7 @@ function Dashboard() {
           {tab === "admin" && account.role === "ADMIN" && <AdminPage />}
           {tab === "reports" && account.role === "ADMIN" && <ReportsPage />}
           {tab === "salesorders" && <SalesOrdersPage />}
+          </FadeContent>
         </main>
         {(account.role === "WAREHOUSE_STAFF" || account.role === "ADMIN") && <QuickActionMenu />}
         <CommandPalette onNavigate={t => setTab(t as Tab)} />
@@ -286,83 +289,88 @@ function SideNav({
     <aside
       className={
         mobile
-          ? "flex h-full w-full flex-col border-r border-border bg-surface"
+          ? "flex h-full w-full flex-col bg-surface"
           : "hidden w-60 shrink-0 flex-col border-r border-border bg-surface md:sticky md:top-0 md:flex md:h-screen md:overflow-y-auto"
       }
     >
-      <div className="px-5 py-5">
-        <div className="flex items-center gap-2">
-          <img
-            src={wbLogo}
-            alt="WalangBrownout logo"
-            className="h-7 w-7 rounded-md object-cover"
-          />
-          <span className="font-semibold">Inventory OS</span>
+      {/* Logo */}
+      <div className="px-5 pt-6 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-foreground shadow-sm">
+            <img src={wbLogo} alt="WalangBrownout logo" className="h-5 w-5 rounded-md object-cover brightness-0 invert dark:brightness-100 dark:invert-0" />
+          </div>
+          <div className="min-w-0 leading-tight">
+            <div className="truncate text-sm font-bold tracking-tight">WalangBrownout</div>
+            <div className="text-[10px] text-muted-foreground">Inventory OS</div>
+          </div>
         </div>
       </div>
 
-      <p className="px-5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Main navigation</p>
-      <nav className="mt-2 flex flex-col gap-1 px-3">
-        {tabs.map(key => {
-          const active = tab === key;
-          const Icon = TAB_ICONS[key];
-          return (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors ${
-                active
-                  ? "border-border bg-muted font-semibold text-foreground"
-                  : "border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-              }`}
-            >
-              <span className="flex items-center gap-2.5">
-                <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-                {PAGE_META[key].title}
-              </span>
-              {key === "admin" && (
-                <span className="inline-flex items-center justify-center rounded-full border border-border px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Admin
+      {/* Nav */}
+      <div className="px-3 pb-2">
+        <p className="px-2 pb-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/60">Navigation</p>
+        <nav className="flex flex-col gap-0.5">
+          {tabs.map(key => {
+            const active = tab === key;
+            const Icon = TAB_ICONS[key];
+            return (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={`group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-all duration-150 ${
+                  active
+                    ? "bg-foreground font-semibold text-background shadow-sm"
+                    : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                }`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <Icon className="h-4 w-4 shrink-0" strokeWidth={active ? 2.5 : 2} />
+                  {PAGE_META[key].title}
                 </span>
-              )}
-              {key === "alerts" && openAlerts > 0 && (
-                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1.5 text-[10px] font-bold text-background">
-                  {openAlerts}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
+                {key === "alerts" && openAlerts > 0 && (
+                  <span className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${active ? "bg-background text-foreground" : "bg-danger text-white"}`}>
+                    {openAlerts}
+                  </span>
+                )}
+                {key === "admin" && (
+                  <span className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${active ? "bg-background/20 text-background" : "bg-muted text-muted-foreground"}`}>
+                    ADM
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
 
-      {/* --- BOTTOM SECTION --- */}
-      <div className="mt-auto px-5 py-5">
-        
-        {/* 1. Live Clock injected here with a bottom margin for spacing */}
-        <div className="mb-6">
+      {/* Bottom section */}
+      <div className="mt-auto border-t border-border px-5 py-5">
+        <div className="mb-4">
           <LiveClock />
         </div>
 
-        {/* 2. Existing User Profile Section */}
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">User profile / account</p>
-        <div className="mt-2 flex items-center gap-2 border-t border-dashed border-border pt-3">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-bold">
-            {name.split(" ").map(w => w[0]).slice(0, 2).join("")}
-          </span>
-          <div className="min-w-0 leading-tight">
-            <div className="truncate text-sm font-medium">{name}</div>
-            <div className="truncate text-xs text-muted-foreground">{role}</div>
+        {/* User card */}
+        <div className="rounded-xl border border-border bg-muted/30 p-3">
+          <div className="flex items-center gap-2.5">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-foreground text-[11px] font-bold text-background">
+              {name.split(" ").map(w => w[0]).slice(0, 2).join("")}
+            </span>
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="truncate text-sm font-semibold">{name}</div>
+              <div className="truncate text-[10px] text-muted-foreground">{role}</div>
+            </div>
           </div>
+          <div className="mt-2.5 flex items-center justify-between">
+            <ThemeToggle />
+          </div>
+          <button
+            onClick={onSignOut}
+            className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-background/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            Sign out
+          </button>
         </div>
-        <div className="mt-3">
-          <ThemeToggle />
-        </div>
-        <button
-          onClick={onSignOut}
-          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted">
-          <LogOut className="h-3.5 w-3.5" />
-          Sign out
-        </button>
       </div>
     </aside>
   );
@@ -406,8 +414,7 @@ function OverviewPage({ query, alerts, onAck }: { query: string; alerts: Alert[]
   }).length;
 
   return (
-    <div className="space-y-5">
-      <h2 className="text-xl font-bold text-foreground">KPI Summary Cards</h2>
+    <div className="space-y-6">
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi value={products.length} label="Active SKUs Tracked" icon={Package} />
         <Kpi value={alerts.length} label="Open Alerts" icon={Bell} />
@@ -417,13 +424,10 @@ function OverviewPage({ query, alerts, onAck }: { query: string; alerts: Alert[]
 
       <section className="grid gap-5 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Panel — auto-refreshes every ~3.5s
-          </p>
-          <div className="card-surface">
-            <div className="flex items-center justify-between border-b border-border px-5 py-3">
-              <h2 className="text-lg font-semibold">Live Transaction Feed</h2>
-              <span className="chip bg-success/15 text-success">
+          <div className="card-surface overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+              <h2 className="text-base font-bold tracking-tight">Live Transaction Feed</h2>
+              <span className="chip bg-success/10 text-success">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> streaming
               </span>
             </div>
@@ -434,36 +438,38 @@ function OverviewPage({ query, alerts, onAck }: { query: string; alerts: Alert[]
                   <AnimatedItem
                     key={tx.id}
                     delay={i * 60}
-                    className="flex items-center justify-between gap-3 px-5 py-3 text-sm transition-colors hover:bg-muted/40"
+                    className="flex items-center justify-between gap-3 px-5 py-3 text-sm transition-colors hover:bg-muted/30"
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <TxTypeBadge type={tx.type} />
                       <span className="truncate">
                         {p?.name}{" "}
-                        <span className={tx.quantityDelta < 0 ? "text-danger" : "text-success"}>
+                        <span className={`font-mono font-semibold ${tx.quantityDelta < 0 ? "text-danger" : "text-success"}`}>
                           {tx.quantityDelta > 0 ? "+" : ""}{tx.quantityDelta}
                         </span>{" "}
                         <span className="text-muted-foreground">· {titleCase(tx.channel)}</span>
                       </span>
                     </div>
-                    <span className="shrink-0 text-xs text-muted-foreground"><TimeAgo iso={tx.timestamp} /></span>
+                    <span className="shrink-0 font-mono text-xs text-muted-foreground"><TimeAgo iso={tx.timestamp} /></span>
                   </AnimatedItem>
                 );
               })}
               {feed.length === 0 && (
-                <li className="px-5 py-8 text-center text-sm text-muted-foreground">No matching transactions</li>
+                <li className="px-5 py-10 text-center text-sm text-muted-foreground">No matching transactions</li>
               )}
             </ul>
           </div>
         </div>
 
         <div className="lg:col-span-2">
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Panel — mirrors Alerts screen, top 3
-          </p>
-          <div className="card-surface flex h-full flex-col">
-            <div className="border-b border-border px-5 py-3">
-              <h2 className="text-lg font-semibold">Active Alerts</h2>
+          <div className="card-surface flex h-full flex-col overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+              <h2 className="text-base font-bold tracking-tight">Active Alerts</h2>
+              {alerts.length > 0 && (
+                <span className="rounded-full border border-danger/30 bg-danger/8 px-2.5 py-0.5 text-[10px] font-bold text-danger">
+                  {alerts.length} open
+                </span>
+              )}
             </div>
             <div className="flex flex-1 flex-col gap-3 p-4">
               {alerts.slice(0, 3).map(a => (
@@ -488,16 +494,20 @@ function OverviewPage({ query, alerts, onAck }: { query: string; alerts: Alert[]
 
 function Kpi({ value, label, suffix, icon: Icon }: { value: number; label: string; suffix?: string; icon: LucideIcon }) {
   return (
-    <div className="card-surface p-5 transition-colors hover:bg-muted/30">
-      <div className="flex items-center justify-between">
-        <div className="font-display text-3xl font-semibold">
-          <CountUp to={value} suffix={suffix} />
+    <div className="card-surface group relative overflow-hidden p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
+      {/* Subtle top accent line */}
+      <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-foreground/20 to-transparent" />
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="font-display text-3xl font-bold tracking-tight">
+            <CountUp to={value} suffix={suffix} />
+          </div>
+          <div className="mt-1.5 text-xs font-medium text-muted-foreground">{label}</div>
         </div>
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-muted/60 text-muted-foreground transition-colors group-hover:bg-foreground group-hover:text-background">
           <Icon className="h-4 w-4" strokeWidth={2} />
         </span>
       </div>
-      <div className="mt-1 text-xs text-muted-foreground">{label}</div>
     </div>
   );
 }
@@ -540,16 +550,12 @@ function InventoryPage({ query, canExport = false }: { query: string; canExport?
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
-          <Package className="h-5 w-5 text-muted-foreground" strokeWidth={2} />
-          Product Table Panel
-        </h2>
         {canExport && (
           <button
             onClick={exportCSV}
-            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+            className="ml-auto rounded-xl border border-border bg-muted/40 px-4 py-2 text-xs font-semibold transition-colors hover:bg-muted"
           >
             Export CSV
           </button>
@@ -557,26 +563,26 @@ function InventoryPage({ query, canExport = false }: { query: string; canExport?
       </div>
       <div className="card-surface overflow-hidden">
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-5 py-4">
-
-          {(["All", "Class A", "Class B", "Class C", "FIFO-critical"] as Pill[]).map(v => (
-            <button
-              key={v}
-              onClick={() => setPill(v)}
-              className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
-                pill === v
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {v === "Class A"
-                ? "Class A (Top Value)"
-                : v === "Class B"
-                ? "Class B (Regular Value)"
-                : v === "Class C"
-                ? "Class C (Low Value)"
-                : v}
-            </button>
-          ))}
+          <Package className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={2} />
+          <span className="text-sm font-bold tracking-tight">Inventory</span>
+          <div className="ml-auto flex flex-wrap gap-2">
+            {(["All", "Class A", "Class B", "Class C", "FIFO-critical"] as Pill[]).map(v => (
+              <button
+                key={v}
+                onClick={() => setPill(v)}
+                className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                  pill === v
+                    ? "border-foreground bg-foreground text-background shadow-sm"
+                    : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+                }`}
+              >
+                {v === "Class A" ? "A — Top Value"
+                  : v === "Class B" ? "B — Regular"
+                  : v === "Class C" ? "C — Low Value"
+                  : v}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -654,17 +660,12 @@ function StockBar({
 
 function AlertsPage({ alerts, onAck }: { alerts: Alert[]; onAck: (id: string) => void }) {
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-        </p>
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Open-count badge</p>
-      </div>
-      <div className="card-surface">
-        <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <h2 className="text-xl font-bold text-foreground">All Alerts</h2>
-          <span className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground">
-            {alerts.length} OPEN
+    <div className="space-y-4">
+      <div className="card-surface overflow-hidden">
+        <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+          <h2 className="text-base font-bold tracking-tight">All Alerts</h2>
+          <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${alerts.length > 0 ? "border-danger/30 bg-danger/8 text-danger" : "border-border text-muted-foreground"}`}>
+            {alerts.length} open
           </span>
         </div>
         <ul className="divide-y divide-border">
@@ -675,7 +676,7 @@ function AlertsPage({ alerts, onAck }: { alerts: Alert[]; onAck: (id: string) =>
           ))}
         </ul>
         <div className="px-5 pb-5 pt-1">
-          <div className="min-h-32 rounded-lg border border-dashed border-border">
+          <div className="min-h-32 rounded-xl border border-dashed border-border">
             <EmptyState
               icon={alerts.length === 0 ? CheckCircle2 : Inbox}
               message={
@@ -686,9 +687,6 @@ function AlertsPage({ alerts, onAck }: { alerts: Alert[]; onAck: (id: string) =>
             />
           </div>
         </div>
-        <p className="border-t border-border px-5 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">
-          Alert row — type icon, title (item), detail (threshold math), tag, timestamp
-        </p>
       </div>
     </div>
   );
@@ -755,8 +753,7 @@ function MyDayPage({ role, name, alerts }: { role: Role; name: string; alerts: A
   const variances = cycleCounts.filter(c => c.countedQty !== null && c.countedQty !== c.systemQty);
 
   return (
-    <div className="space-y-5">
-      <h2 className="text-xl font-bold text-foreground">KPI Summary Cards</h2>
+    <div className="space-y-6">
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {isWarehouse ? (
           <>
@@ -881,8 +878,8 @@ function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-dashed divide-border">
-                {rows.map(({ p, qty, rop }) => (
-                  <tr key={p.sku} className="hover:bg-muted/40">
+                {rows.map(({ p, qty, rop }, i) => (
+                  <AnimatedRow key={p.sku} delay={i * 50} className="hover:bg-muted/40">
                     <Td className="font-mono text-xs">{p.sku}</Td>
                     <Td className="font-medium">{p.name}</Td>
                     <Td className="font-mono text-xs">{qty} / {rop}</Td>
@@ -913,7 +910,7 @@ function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
                         supplierTin={liveSuppliers.find(s => s.id === p.supplierId)?.tin}
                       />
                     </Td>
-                  </tr>
+                  </AnimatedRow>
                 ))}
                 {rows.length === 0 && (
                   <tr><Td className="py-8 text-center text-muted-foreground">Nothing below reorder point.</Td></tr>

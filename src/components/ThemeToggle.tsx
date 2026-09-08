@@ -1,4 +1,5 @@
 import { useTheme } from "@/hooks/use-theme";
+import { Sun, Moon } from "lucide-react";
 
 export function ThemeToggle() {
   const { theme, toggle } = useTheme();
@@ -11,7 +12,10 @@ export function ThemeToggle() {
       className="flex w-full items-center justify-between rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
     >
       <span>{isDark ? "Dark mode" : "Light mode"}</span>
-      <span aria-hidden>{isDark ? "🌙" : "☀️"}</span>
+      {isDark
+        ? <Moon className="h-3.5 w-3.5 text-foreground" aria-hidden />
+        : <Sun className="h-3.5 w-3.5 text-foreground" aria-hidden />
+      }
     </button>
   );
 }
