@@ -55,7 +55,7 @@ function LoginPage() {
   return (
     <div className="relative flex min-h-screen w-full overflow-hidden">
       {/* Left panel — full-bleed product gallery */}
-4      <div className="relative hidden w-1/2 bg-[#16181c] md:block">
+      <div className="relative hidden w-1/2 bg-[#16181c] md:block">
         <DriftWall
           items={PRODUCT_TILES}
           columns={5}
