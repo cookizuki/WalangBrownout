@@ -83,8 +83,8 @@ function LoginPage() {
         <DotField />
 
         {/* Ambient glow blobs — purely decorative */}
-        <div className="pointer-events-none absolute -top-32 -right-32 h-96 w-96 rounded-full bg-foreground/[0.04] blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-foreground/[0.03] blur-2xl" />
+        <div className="pointer-events-none absolute -top-32 -right-32 h-96 w-96 rounded-full bg-foreground/4 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-foreground/3 blur-2xl" />
 
         <div className="relative z-10 w-full max-w-sm">
           <FadeContent>

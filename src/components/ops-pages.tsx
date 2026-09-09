@@ -6,7 +6,7 @@ import {
 } from "@/lib/inventory-data";
 import { fifoBatches, reportAdjustment, submitCount, useOps, type AdjustmentReason, requestRecount } from "@/lib/ops-store";
 import { AnimatedRow, Panel, SectionLabel, TaskPill, Td, Th, TimeAgo, daysLeft, titleCase, EmptyState } from "@/components/ui-bits";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, PackageSearch } from "lucide-react";
 import { GlareHover } from "@/components/GlareHover";
 import { TxTypeBadge } from "@/lib/tx-type-styles";
 
@@ -239,14 +239,26 @@ export function TransactionLogPage() {
 export function BatchesPage({ canAdjust = false }: { canAdjust?: boolean }) {
   const { batches } = useOps();
   const [adjusting, setAdjusting] = useState<string | null>(null);
+  const [q, setQ] = useState("");
 
-  const rows = products.flatMap(p => fifoBatches(p.sku, batches).map((b, idx) => ({ b, idx })));
+  const needle = q.trim().toLowerCase();
+  const rows = products
+    .filter(p => !needle || p.sku.toLowerCase().includes(needle) || p.name.toLowerCase().includes(needle))
+    .flatMap(p => fifoBatches(p.sku, batches).map((b, idx) => ({ b, idx })));
 
   return (
     <div className="space-y-2">
-      <h2 className="text-xl font-bold text-foreground">
-        Batch Tracking Panel{canAdjust ? "" : " · read-only"}
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-bold text-foreground">
+          Batch Tracking Panel{canAdjust ? "" : " · read-only"}
+        </h2>
+        <input
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          placeholder="Search product or SKU…"
+          className="w-56 rounded-full border border-border bg-background px-4 py-1.5 text-xs outline-none focus:border-primary"
+        />
+      </div>
       <div className="card-surface overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-205 text-sm">
@@ -311,6 +323,13 @@ export function BatchesPage({ canAdjust = false }: { canAdjust?: boolean }) {
                   </Fragment>
                 );
               })}
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={canAdjust ? 8 : 7}>
+                    <EmptyState icon={PackageSearch} message="No batches match this search." />
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
