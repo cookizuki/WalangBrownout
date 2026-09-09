@@ -18,7 +18,7 @@ import {
   TimeAgo, daysLeft, titleCase, EmptyState,
 } from "@/components/ui-bits";
 import { DraftPOAction } from "@/components/DraftPOAction";
-import { useOps, useAlerts, acknowledgeAlert, usePurchaseOrderStatuses } from "@/lib/ops-store";
+import { useOps, useAlerts, acknowledgeAlert, usePurchaseOrderStatuses, completePickTask } from "@/lib/ops-store";
 import { FIFOExceptionPopover } from "@/components/FIFOExceptionPopover";
 import { ReceivingEntryModal } from "@/components/ReceivingEntryModal";
 import { QuickActionMenu } from "@/components/QuickActionMenu";
@@ -496,7 +496,7 @@ function Kpi({ value, label, suffix, icon: Icon }: { value: number; label: strin
   return (
     <div className="card-surface group relative overflow-hidden p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
       {/* Subtle top accent line */}
-      <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-foreground/20 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-transparent via-foreground/20 to-transparent" />
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="font-display text-3xl font-bold tracking-tight">
@@ -966,7 +966,6 @@ function ReorderReviewPage({ requestedBy }: { requestedBy: string }) {
 
 function PickTasksPage() {
   const { pickTasks } = useOps();
-  const [done, setDone] = useState<string[]>([]);
   const [highlighted, setHighlighted] = useState<string | null>(null);
   const order = { HIGH: 0, NORMAL: 1, LOW: 2 } as const;
   const rows = [...pickTasks].sort((a, b) => order[a.priority] - order[b.priority]);
@@ -992,7 +991,7 @@ function PickTasksPage() {
         title="Pick Tasks"
         right={
           <span className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground">
-            {rows.filter(t => t.status !== "DONE" && !done.includes(t.id)).length} OPEN
+            {rows.filter(t => t.status !== "DONE").length} OPEN
           </span>
         }
         footer="Picking a different lot than the assigned batch breaks FIFO and raises a variance alert"
@@ -1009,7 +1008,7 @@ function PickTasksPage() {
               {rows.map(t => {
                 const p = products.find(pp => pp.sku === t.sku);
                 const loc = locations.find(l => l.id === t.locationId);
-                const status = done.includes(t.id) ? "DONE" : t.status;
+                const status = t.status;
                 return (
                   <tr key={t.id} className={`transition-colors duration-500 hover:bg-muted/40 ${highlighted === t.id ? "bg-success/10" : ""}`}>
                     <Td className="font-mono text-xs">{t.id}</Td>
@@ -1033,7 +1032,7 @@ function PickTasksPage() {
                     <Td>
                       {status !== "DONE" && (
                         <button
-                          onClick={() => setDone(d => [...d, t.id])}
+                          onClick={() => completePickTask(t.id)}
                           className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted"
                         >
                           Mark picked

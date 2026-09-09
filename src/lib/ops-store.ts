@@ -425,7 +425,46 @@ export function logMovement(input: {
   };
   emit();
 }
+/**
+ * Warehouse Staff marks a pick task complete: decrements the assigned
+ * batch's remaining quantity, logs a SALE transaction (fulfilling the
+ * task's sales order), and marks the task DONE in shared state — visible
+ * to every session, not just the tab that clicked it.
+ */
+export function completePickTask(taskId: string, userId = 4) {
+  const task = state.pickTasks.find(t => t.id === taskId);
+  if (!task || task.status === "DONE") return;
 
+  const batch = state.batches.find(b => b.id === task.batchId);
+
+  state = {
+    ...state,
+    pickTasks: state.pickTasks.map(t =>
+      t.id === taskId ? { ...t, status: "DONE" as const } : t,
+    ),
+    batches: batch
+      ? state.batches.map(b =>
+          b.id === batch.id
+            ? { ...b, quantityRemaining: Math.max(0, b.quantityRemaining - task.quantity) }
+            : b,
+        )
+      : state.batches,
+    transactions: [
+      {
+        id: nextTxId(),
+        batchId: task.batchId,
+        sku: task.sku,
+        userId,
+        type: "SALE",
+        quantityDelta: -task.quantity,
+        timestamp: new Date().toISOString(),
+        channel: "WAREHOUSE",
+      },
+      ...state.transactions,
+    ],
+  };
+  emit();
+}
 /**
  * Warehouse staff flags the currently-assigned (#1 NEXT) batch as damaged or
  * missing. Writes off its remaining quantity and reassigns the pick task to
