@@ -20,6 +20,7 @@ export function StockCountsPage({ mode }: { mode: "entry" | "review" }) {
   const { counts, transactions } = useOps();
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [open, setOpen] = useState<string | null>(null);
+  const [requested, setRequested] = useState<string[]>([]);
 
   return (
     <div className="space-y-2">
@@ -59,11 +60,7 @@ export function StockCountsPage({ mode }: { mode: "entry" | "review" }) {
                 );
                 return (
                   <Fragment key={c.id}>
-                    <AnimatedRow
-                      delay={i * 50}
-                      className={investigable ? "cursor-pointer" : ""}
-                      onClick={investigable ? () => setOpen(open === c.id ? null : c.id) : undefined}
-                    >
+                    <AnimatedRow delay={i * 50}>
                       <Td className="font-mono text-xs">{c.id}</Td>
                       <Td className="font-medium">{productName(c.sku)}</Td>
                       <Td className="text-muted-foreground">{locCode(c.locationId)}</Td>
@@ -87,7 +84,7 @@ export function StockCountsPage({ mode }: { mode: "entry" | "review" }) {
                         {variance === null ? "—" : variance > 0 ? `+${variance}` : variance}
                       </Td>
                       <Td><TaskPill status={value !== null && c.status === "PENDING" ? "IN_PROGRESS" : c.status} /></Td>
-                                            <Td>
+                      <Td>
                         {mode === "entry" && c.countedQty === null && (
                           <button
                             disabled={!entered}
@@ -109,9 +106,27 @@ export function StockCountsPage({ mode }: { mode: "entry" | "review" }) {
                           </button>
                         )}
                         {investigable && (
-                          <span className="text-xs text-muted-foreground">
-                            {open === c.id ? "Hide log" : "Investigate"}
-                          </span>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => setOpen(open === c.id ? null : c.id)}
+                              className="text-xs font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                            >
+                              {open === c.id ? "Hide log" : "Investigate"}
+                            </button>
+                            {requested.includes(c.id) ? (
+                              <span className="text-xs font-semibold text-success">Recount requested</span>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  requestRecount(c.id);
+                                  setRequested(r => [...r, c.id]);
+                                }}
+                                className="rounded-md border border-dashed border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                              >
+                                Request recount
+                              </button>
+                            )}
+                          </div>
                         )}
                       </Td>
                     </AnimatedRow>
