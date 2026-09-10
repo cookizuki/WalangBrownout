@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import { createPortal } from "react-dom";
 import { money } from "@/lib/inventory-data";
 
 export interface PODraftPreviewData {
@@ -99,23 +99,23 @@ export function PODraftPreviewModal({
     }, 450);
   };
 
-  return (
+  return createPortal(
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 px-4 py-8 transition-opacity duration-200 ${
+      className={`fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-foreground/50 px-4 py-8 transition-opacity duration-200 ${
         shown ? "opacity-100" : "opacity-0"
       }`}
       onClick={handleBackdropClick}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`max-h-full w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl transition-all duration-200 ${
+        className={`mx-auto w-full max-w-lg rounded-2xl border border-border bg-card shadow-2xl transition-all duration-200 ${
           shown
             ? "translate-y-0 scale-100 opacity-100"
             : "translate-y-3 scale-95 opacity-0"
         }`}
       >
         {/* Header */}
-        <div className="border-b-2 border-border px-6 py-5">
+        <div className="border-b-2 border-border px-6 py-4">
           {/* Back button + Letterhead */}
           <div className="flex items-start gap-4">
             {/* BACK BUTTON */}
@@ -157,7 +157,7 @@ export function PODraftPreviewModal({
         </div>
 
         {/* Content */}
-        <div className="px-6 py-5">
+        <div className="px-6 py-4">
           {/* Supplier + Order info */}
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
@@ -218,7 +218,7 @@ export function PODraftPreviewModal({
           </div>
 
           {/* Item details */}
-          <div className="mt-5">
+          <div className="mt-4">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Item Details
             </p>
@@ -243,21 +243,21 @@ export function PODraftPreviewModal({
 
                 <tbody>
                   <tr>
-                    <td className="px-3 py-2.5 font-mono">{data.sku}</td>
+                    <td className="px-3 py-2 font-mono">{data.sku}</td>
 
-                    <td className="px-3 py-2.5 font-medium">
+                    <td className="px-3 py-2 font-medium">
                       {data.productName}
                     </td>
 
-                    <td className="px-3 py-2.5 text-right font-mono">
+                    <td className="px-3 py-2 text-right font-mono">
                       {data.quantity}
                     </td>
 
-                    <td className="px-3 py-2.5 text-right font-mono">
+                    <td className="px-3 py-2 text-right font-mono">
                       {money(data.unitCost)}
                     </td>
 
-                    <td className="px-3 py-2.5 text-right font-mono font-semibold">
+                    <td className="px-3 py-2 text-right font-mono font-semibold">
                       {money(total)}
                     </td>
                   </tr>
@@ -267,7 +267,7 @@ export function PODraftPreviewModal({
           </div>
 
           {/* Reorder info */}
-          <div className="mt-5 rounded-lg border border-dashed border-border p-3.5">
+          <div className="mt-4 rounded-lg border border-dashed border-border p-3">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Reorder Information
             </p>
@@ -310,7 +310,7 @@ export function PODraftPreviewModal({
           </div>
 
           {/* Summary */}
-          <div className="mt-5 border-t border-dashed border-border pt-4">
+          <div className="mt-4 border-t border-dashed border-border pt-3">
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>Subtotal</span>
 
@@ -347,7 +347,7 @@ export function PODraftPreviewModal({
         )}
 
         {/* Actions */}
-        <div className="flex gap-2 border-t border-border px-6 py-4">
+        <div className="flex gap-2 border-t border-border px-6 py-3">
           {mode === "approval" ? (
             <>
               {/* REJECT */}
@@ -398,6 +398,7 @@ export function PODraftPreviewModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
