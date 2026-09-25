@@ -18,7 +18,7 @@ export default function Authenticated({
 
     return (
         <div className="min-h-screen bg-gray-100">
-            <nav className="border-b border-gray-100 bg-white">
+            <nav className="print:hidden border-b border-gray-100 bg-white">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
                         <div className="flex">
@@ -177,7 +177,7 @@ export default function Authenticated({
             )}
 
             <main>{children}</main>
-            {(user.role === 'WAREHOUSE_STAFF' || user.role === 'ADMIN') && <QuickActionMenu />}
+            {(user.role === 'WAREHOUSE_STAFF' || user.role === 'ADMIN') && <div className="print:hidden"><QuickActionMenu /></div>}
         </div>
     );
 }

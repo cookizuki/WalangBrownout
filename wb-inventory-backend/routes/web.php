@@ -12,6 +12,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseOrderApprovalController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\ReceivingController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TransactionLogController;
 use App\Http\Controllers\WarehouseLocationController;
@@ -102,3 +103,5 @@ Route::middleware(['auth', 'role:WAREHOUSE_STAFF,INVENTORY_STAFF'])->group(funct
     Route::post('/counts/{count}/submit', [CycleCountController::class, 'submit'])->middleware('role:WAREHOUSE_STAFF')->name('counts.submit');
     Route::post('/counts/{count}/recount', [CycleCountController::class, 'recount'])->name('counts.recount');
 });
+
+Route::get('/reports', [ReportController::class, 'index'])->middleware(['auth', 'role:ADMIN'])->name('reports.index');
