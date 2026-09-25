@@ -11,6 +11,8 @@ class Supplier extends Model
         'name',
         'contact',
         'contact_role',
+        'email',
+        'phone',
         'address',
         'landline',
         'tin',
@@ -21,4 +23,3 @@ class Supplier extends Model
         return $this->hasMany(Product::class);
     }
 }
-

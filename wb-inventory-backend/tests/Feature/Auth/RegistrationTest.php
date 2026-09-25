@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\Role;
+
 test('registration screen can be rendered', function () {
     $response = $this->get('/register');
 
@@ -12,8 +14,14 @@ test('new users can register', function () {
         'email' => 'test@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
+        'role' => Role::WAREHOUSE_STAFF->value,
     ]);
 
+    $response->assertSessionHasNoErrors();
     $this->assertAuthenticated();
+    $this->assertDatabaseHas('users', [
+        'email' => 'test@example.com',
+        'role' => Role::WAREHOUSE_STAFF->value,
+    ]);
     $response->assertRedirect(route('dashboard', absolute: false));
 });

@@ -1,17 +1,23 @@
 <?php
 
+use App\Http\Controllers\AlertController;
+use App\Http\Controllers\BatchController;
 use App\Http\Controllers\DemoAccountController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\TransactionLogController;
+use App\Http\Controllers\WarehouseLocationController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
-        'canLogin'      => Route::has('login'),
-        'canRegister'   => Route::has('register'),
+        'canLogin' => Route::has('login'),
+        'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
-        'phpVersion'    => PHP_VERSION,
+        'phpVersion' => PHP_VERSION,
     ]);
 });
 
@@ -29,4 +35,27 @@ Route::middleware('auth')->group(function () {
 // Never returns passwords — name, email, role only.
 Route::get('/demo-accounts', [DemoAccountController::class, 'index'])->name('demo-accounts.index');
 
+Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+    Route::put('/products/{product:sku}', [ProductController::class, 'update'])->name('products.update');
+    Route::get('/suppliers-locations', [SupplierController::class, 'index'])->name('suppliers-locations.index');
+    Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
+    Route::put('/suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
+    Route::post('/locations', [WarehouseLocationController::class, 'store'])->name('locations.store');
+    Route::put('/locations/{location}', [WarehouseLocationController::class, 'update'])->name('locations.update');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/batches', [BatchController::class, 'index'])->name('batches.index');
+    Route::post('/batches/{batch}/adjustment', [BatchController::class, 'reportAdjustment'])
+        ->middleware('role:ADMIN,WAREHOUSE_STAFF')->name('batches.adjustment');
+});
+
 require __DIR__.'/auth.php';
+
+Route::middleware('auth')->group(function () {
+    Route::get('/transactions', [TransactionLogController::class, 'index'])->middleware('role:INVENTORY_STAFF')->name('transactions.index');
+    Route::get('/alerts', [AlertController::class, 'index'])->name('alerts.index');
+    Route::post('/alerts/{alertId}/acknowledge', [AlertController::class, 'acknowledge'])->name('alerts.acknowledge');
+});
