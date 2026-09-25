@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CycleCount;
 use App\Models\InventoryBatch;
 use App\Models\Product;
 use App\Models\ReceivingLine;
@@ -51,7 +52,16 @@ class AlertService
                 'status' => 'OPEN', 'createdAt' => $now->toISOString(),
             ]);
         }
-        // TODO: VARIANCE once cycle_counts exists (Part 7)
+        foreach (CycleCount::whereNotNull('counted_qty')->whereColumn('counted_qty', '!=', 'system_qty')->orderBy('id')->get() as $count) {
+            $difference = $count->counted_qty - $count->system_qty;
+            $amount = abs($difference);
+            $direction = $difference < 0 ? 'under' : 'over';
+            $alerts->push([
+                'id' => "A-{$count->id}-VAR", 'sku' => $count->sku, 'productName' => $products[$count->sku]->name,
+                'type' => 'VARIANCE', 'message' => "Cycle count variance \u{2014} {$amount} units {$direction} system quantity ({$count->system_qty} \u{2192} {$count->counted_qty})",
+                'status' => 'OPEN', 'createdAt' => $now->toISOString(),
+            ]);
+        }
 
         return $alerts;
     }

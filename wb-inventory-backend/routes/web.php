@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\BatchController;
+use App\Http\Controllers\CycleCountController;
 use App\Http\Controllers\DemoAccountController;
 use App\Http\Controllers\MovementController;
 use App\Http\Controllers\NotificationController;
@@ -95,3 +96,9 @@ Route::middleware(['auth', 'role:WAREHOUSE_STAFF'])->group(function () {
 });
 Route::post('/movements', [MovementController::class, 'store'])->middleware(['auth', 'role:WAREHOUSE_STAFF,ADMIN'])->name('movements.store');
 Route::get('/sales-orders', [PickTaskController::class, 'salesOrders'])->middleware(['auth', 'role:ADMIN,INVENTORY_STAFF'])->name('sales-orders.index');
+
+Route::middleware(['auth', 'role:WAREHOUSE_STAFF,INVENTORY_STAFF'])->group(function () {
+    Route::get('/counts', [CycleCountController::class, 'index'])->name('counts.index');
+    Route::post('/counts/{count}/submit', [CycleCountController::class, 'submit'])->middleware('role:WAREHOUSE_STAFF')->name('counts.submit');
+    Route::post('/counts/{count}/recount', [CycleCountController::class, 'recount'])->name('counts.recount');
+});

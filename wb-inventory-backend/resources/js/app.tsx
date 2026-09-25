@@ -16,7 +16,7 @@ createInertiaApp({
         const page = await resolvePageComponent<PageModule>(
             `./Pages/${name}.tsx`, import.meta.glob<PageModule>('./Pages/**/*.tsx'),
         );
-        if (/^(Admin|Reorder|Batches|TransactionLog|Alerts|Receiving|PickTasks|SalesOrders)\//.test(name)) {
+        if (/^(Admin|Reorder|Batches|TransactionLog|Alerts|Receiving|PickTasks|SalesOrders|StockCounts)\//.test(name)) {
             page.default.layout = (content) => <AuthenticatedLayout>{content}</AuthenticatedLayout>;
         }
         return page;

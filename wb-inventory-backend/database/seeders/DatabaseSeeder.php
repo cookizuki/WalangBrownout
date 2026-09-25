@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             PurchaseOrderSeeder::class,
             ReceivingLineSeeder::class,
             PickTaskSeeder::class,
+            CycleCountSeeder::class,
         ]);
     }
 }
