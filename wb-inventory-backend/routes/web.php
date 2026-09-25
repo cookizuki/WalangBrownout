@@ -5,6 +5,7 @@ use App\Http\Controllers\BatchController;
 use App\Http\Controllers\DemoAccountController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TransactionLogController;
 use App\Http\Controllers\WarehouseLocationController;
@@ -32,7 +33,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // Public endpoint: returns the 4 seeded demo accounts for the login modal.
-// Never returns passwords — name, email, role only.
+// Never returns passwords â€” name, email, role only.
 Route::get('/demo-accounts', [DemoAccountController::class, 'index'])->name('demo-accounts.index');
 
 Route::middleware(['auth', 'role:ADMIN'])->prefix('admin')->name('admin.')->group(function () {
@@ -58,4 +59,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/transactions', [TransactionLogController::class, 'index'])->middleware('role:INVENTORY_STAFF')->name('transactions.index');
     Route::get('/alerts', [AlertController::class, 'index'])->name('alerts.index');
     Route::post('/alerts/{alertId}/acknowledge', [AlertController::class, 'acknowledge'])->name('alerts.acknowledge');
+});
+
+Route::middleware(['auth', 'role:INVENTORY_STAFF'])->group(function () {
+    Route::get('/reorder', [PurchaseOrderController::class, 'index'])->name('reorder.index');
+    Route::post('/reorder/{product:sku}/draft', [PurchaseOrderController::class, 'draftStore'])->name('reorder.draft');
+    Route::put('/seasonal-config/{product:sku}', [PurchaseOrderController::class, 'updateSeasonalConfig'])->name('seasonal-config.update');
 });

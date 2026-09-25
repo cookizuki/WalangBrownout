@@ -10,13 +10,13 @@ class DatabaseSeeder extends Seeder
      * Seed the application's database.
      *
      * Order respects foreign key dependencies:
-     *   users (DemoUserSeeder)          — referenced by transaction_logs.user_id
-     *   categories                       — referenced by products.category_id
-     *   suppliers                        — referenced by products.supplier_id
-     *   warehouse_locations              — referenced by inventory_batches.location_id
-     *   products                         — referenced by inventory_batches.sku, transaction_logs.sku
-     *   inventory_batches                — referenced by transaction_logs.batch_id
-     *   transaction_logs                 — leaf; requires all of the above
+     *   users (DemoUserSeeder)          â€” referenced by transaction_logs.user_id
+     *   categories                       â€” referenced by products.category_id
+     *   suppliers                        â€” referenced by products.supplier_id
+     *   warehouse_locations              â€” referenced by inventory_batches.location_id
+     *   products                         â€” referenced by inventory_batches.sku, transaction_logs.sku
+     *   inventory_batches                â€” referenced by transaction_logs.batch_id
+     *   transaction_logs                 â€” leaf; requires all of the above
      */
     public function run(): void
     {
@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
             InventoryBatchSeeder::class,
             TransactionLogSeeder::class,
+            ReorderSeeder::class,
         ]);
     }
 }
