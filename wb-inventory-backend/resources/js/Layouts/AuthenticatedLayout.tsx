@@ -1,3 +1,4 @@
+import { QuickActionMenu } from '@/Components/QuickActionMenu';
 import { NotificationBell } from '@/Components/NotificationBell';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
@@ -176,6 +177,7 @@ export default function Authenticated({
             )}
 
             <main>{children}</main>
+            {(user.role === 'WAREHOUSE_STAFF' || user.role === 'ADMIN') && <QuickActionMenu />}
         </div>
     );
 }

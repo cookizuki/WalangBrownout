@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import type { LucideIcon } from "lucide-react";
+import { Clock3, Loader2, CheckCircle2, type LucideIcon } from "lucide-react";
 
 export function Th({ children }: { children: ReactNode }) {
   return (
@@ -67,4 +67,41 @@ export function TimeAgo({ iso }: { iso: string }) {
 
 export function titleCase(s: string) {
   return s.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
+export function Panel({
+  title, right, children, footer, icon: Icon,
+}: { title: string; right?: ReactNode; children: ReactNode; footer?: string; icon?: LucideIcon }) {
+  return (
+    <div className="card-surface overflow-hidden transition-shadow hover:shadow-sm">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3.5">
+        <div className="flex items-center gap-2.5">
+          {Icon && (
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+              <Icon className="h-4 w-4" strokeWidth={2} />
+            </span>
+          )}
+          <h2 className="text-lg font-bold text-foreground">{title}</h2>
+        </div>
+        {right}
+      </div>
+      {children}
+      {footer && <p className="border-t border-border px-5 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">{footer}</p>}
+    </div>
+  );
+}
+
+export function TaskPill({ status }: { status: "PENDING" | "IN_PROGRESS" | "DONE" }) {
+  const map = {
+    PENDING: { cls: "border-warning/50 text-warning", icon: Clock3 },
+    IN_PROGRESS: { cls: "border-info/50 text-info", icon: Loader2 },
+    DONE: { cls: "border-success/40 text-success", icon: CheckCircle2 },
+  } as const;
+  const { cls, icon: Icon } = map[status];
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold ${cls}`}>
+      <Icon className={`h-3 w-3 ${status === "IN_PROGRESS" ? "animate-spin" : ""}`} strokeWidth={2.5} />
+      {titleCase(status)}
+    </span>
+  );
 }

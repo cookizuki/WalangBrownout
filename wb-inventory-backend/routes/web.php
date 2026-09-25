@@ -3,7 +3,9 @@
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\DemoAccountController;
+use App\Http\Controllers\MovementController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PickTaskController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseOrderApprovalController;
@@ -85,3 +87,11 @@ Route::middleware(['auth', 'role:WAREHOUSE_STAFF'])->group(function () {
     Route::get('/receiving', [ReceivingController::class, 'index'])->name('receiving.index');
     Route::post('/receiving/{line}/receive', [ReceivingController::class, 'receive'])->name('receiving.receive');
 });
+
+Route::middleware(['auth', 'role:WAREHOUSE_STAFF'])->group(function () {
+    Route::get('/picks', [PickTaskController::class, 'index'])->name('picks.index');
+    Route::post('/picks/{task}/complete', [PickTaskController::class, 'complete'])->name('picks.complete');
+    Route::post('/picks/{task}/fifo-exception', [PickTaskController::class, 'fifoException'])->name('picks.fifo-exception');
+});
+Route::post('/movements', [MovementController::class, 'store'])->middleware(['auth', 'role:WAREHOUSE_STAFF,ADMIN'])->name('movements.store');
+Route::get('/sales-orders', [PickTaskController::class, 'salesOrders'])->middleware(['auth', 'role:ADMIN,INVENTORY_STAFF'])->name('sales-orders.index');
