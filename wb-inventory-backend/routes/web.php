@@ -8,6 +8,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseOrderApprovalController;
 use App\Http\Controllers\PurchaseOrderController;
+use App\Http\Controllers\ReceivingController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TransactionLogController;
 use App\Http\Controllers\WarehouseLocationController;
@@ -78,4 +79,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
+});
+
+Route::middleware(['auth', 'role:WAREHOUSE_STAFF'])->group(function () {
+    Route::get('/receiving', [ReceivingController::class, 'index'])->name('receiving.index');
+    Route::post('/receiving/{line}/receive', [ReceivingController::class, 'receive'])->name('receiving.receive');
 });

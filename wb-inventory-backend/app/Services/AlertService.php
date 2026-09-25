@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\InventoryBatch;
 use App\Models\Product;
+use App\Models\ReceivingLine;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -40,7 +41,16 @@ class AlertService
                 ]);
             }
         }
-        // TODO: PO_OVERDUE once receiving_lines exists (Part 6)
+        $today = $now->startOfDay();
+        foreach (ReceivingLine::query()->where('status', '!=', 'PUT_AWAY')->whereColumn('quantity_received', '<', 'quantity_ordered')->whereDate('expected_date', '<', $today->toDateString())->orderBy('id')->get() as $line) {
+            $daysLate = (int) $line->expected_date->diffInDays($today);
+            $days = $daysLate === 1 ? 'day' : 'days';
+            $alerts->push([
+                'id' => "A-{$line->id}-OVERDUE", 'sku' => $line->sku, 'productName' => $products[$line->sku]->name,
+                'type' => 'PO_OVERDUE', 'message' => "{$line->po_number} is {$daysLate} {$days} overdue \u{2014} {$line->quantity_received}/{$line->quantity_ordered} units received",
+                'status' => 'OPEN', 'createdAt' => $now->toISOString(),
+            ]);
+        }
         // TODO: VARIANCE once cycle_counts exists (Part 7)
 
         return $alerts;

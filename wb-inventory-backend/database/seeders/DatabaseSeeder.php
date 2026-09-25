@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             TransactionLogSeeder::class,
             ReorderSeeder::class,
             PurchaseOrderSeeder::class,
+            ReceivingLineSeeder::class,
         ]);
     }
 }

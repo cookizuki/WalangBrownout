@@ -56,7 +56,7 @@ test('seeded live alerts match independently calculated ROP thresholds', functio
 
     $alerts = app(AlertService::class)->compute()->keyBy('id');
 
-    expect($alerts->keys()->all())->toBe(['A-THM-201-ROP']);
+    expect($alerts->keys()->all())->toBe(['A-THM-201-ROP', 'A-RC-7701-OVERDUE', 'A-RC-7704-OVERDUE']);
     expect($alerts['A-THM-201-ROP']['message'])->toBe('Below reorder point — on hand 42 ≤ 55');
     expect(Product::findOrFail('ACU-014')->onHand())->toBe(540);
     expect(Product::findOrFail('ACU-014')->ropSeasonal())->toBe(520);
@@ -95,12 +95,12 @@ test('all roles can view and acknowledge alerts persistently', function (string 
     $this->seed(DatabaseSeeder::class);
     $user = User::where('email', $email)->firstOrFail();
     $this->actingAs($user);
-    $this->get('/alerts')->assertInertia(fn (Assert $page) => $page->component('Alerts/Index')->has('alerts', 1));
+    $this->get('/alerts')->assertInertia(fn (Assert $page) => $page->component('Alerts/Index')->has('alerts', 3));
 
     $this->post('/alerts/A-THM-201-ROP/acknowledge')->assertRedirect('/alerts');
 
     $this->assertDatabaseHas('alert_acknowledgements', ['alert_id' => 'A-THM-201-ROP', 'user_id' => $user->id]);
-    $this->get('/alerts')->assertInertia(fn (Assert $page) => $page->has('alerts', 0));
+    $this->get('/alerts')->assertInertia(fn (Assert $page) => $page->has('alerts', 2));
 })->with(['kim@walangbrownout.ph', 'lizle@walangbrownout.ph', 'nhimfa@walangbrownout.ph']);
 
 test('acknowledgements are idempotent across users and remain hidden globally', function () {
@@ -114,7 +114,7 @@ test('acknowledgements are idempotent across users and remain hidden globally', 
 
     $this->assertDatabaseCount('alert_acknowledgements', 1);
     $this->assertDatabaseHas('alert_acknowledgements', ['alert_id' => 'A-THM-201-ROP', 'user_id' => $kim->id]);
-    $this->get('/alerts')->assertInertia(fn (Assert $page) => $page->has('alerts', 0));
+    $this->get('/alerts')->assertInertia(fn (Assert $page) => $page->has('alerts', 2));
     expect(app(AlertService::class)->compute()->pluck('id')->all())->toContain('A-THM-201-ROP');
 });
 
