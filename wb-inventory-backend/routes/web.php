@@ -3,8 +3,10 @@
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\DemoAccountController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PurchaseOrderApprovalController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TransactionLogController;
@@ -65,4 +67,15 @@ Route::middleware(['auth', 'role:INVENTORY_STAFF'])->group(function () {
     Route::get('/reorder', [PurchaseOrderController::class, 'index'])->name('reorder.index');
     Route::post('/reorder/{product:sku}/draft', [PurchaseOrderController::class, 'draftStore'])->name('reorder.draft');
     Route::put('/seasonal-config/{product:sku}', [PurchaseOrderController::class, 'updateSeasonalConfig'])->name('seasonal-config.update');
+});
+
+Route::middleware(['auth', 'role:ADMIN'])->group(function () {
+    Route::get('/admin/po-approvals', [PurchaseOrderApprovalController::class, 'index'])->name('admin.po-approvals.index');
+    Route::post('/admin/po-approvals/{id}/approve', [PurchaseOrderApprovalController::class, 'approve'])->name('admin.po-approvals.approve');
+    Route::post('/admin/po-approvals/{id}/reject', [PurchaseOrderApprovalController::class, 'reject'])->name('admin.po-approvals.reject');
+});
+Route::middleware('auth')->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
 });

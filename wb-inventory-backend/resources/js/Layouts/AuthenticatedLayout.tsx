@@ -1,3 +1,4 @@
+import { NotificationBell } from '@/Components/NotificationBell';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
@@ -36,6 +37,7 @@ export default function Authenticated({
                             </div>
                         </div>
 
+                        <div className="ms-auto flex items-center"><NotificationBell /></div>
                         <div className="hidden sm:ms-6 sm:flex sm:items-center">
                             <div className="relative ms-3">
                                 <Dropdown>

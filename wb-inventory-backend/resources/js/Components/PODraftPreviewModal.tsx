@@ -1,5 +1,6 @@
 import { Dialog, DialogPanel } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
+import { useState } from 'react';
 export const money = (value: number) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 2 }).format(value);
 export interface PODraftPreviewData {
   sku: string;
@@ -15,14 +16,24 @@ export interface PODraftPreviewData {
   formulaLabel?: string;
   requestedBy: string;
   poNumber?: string;
+  requestedAt?: string;
+  totalCost?: number;
 }
 
 
-export function PODraftPreviewModal({ data, onBack }: { data: PODraftPreviewData; onBack: () => void }) {
-  const { post, processing: submitting, errors } = useForm({ quantity: data.quantity });
-  const draftNumber = `DRAFT-${data.sku}`;
-  const today = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
-  const total = data.quantity * data.unitCost;
+export function PODraftPreviewModal({ data, onBack, mode = 'draft' }: { data: PODraftPreviewData; onBack: () => void; mode?: 'draft' | 'approval' }) {
+  const { data: form, setData, post, processing: submitting, errors } = useForm({ quantity: data.quantity, reason: '' });
+  const [showRejectField, setShowRejectField] = useState(false);
+  const draftNumber = data.poNumber ?? `DRAFT-${data.sku}`;
+  const today = (data.requestedAt ? new Date(`${data.requestedAt}T00:00:00`) : new Date()).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+  const total = data.totalCost ?? data.quantity * data.unitCost;
+  const status = mode === 'approval' ? 'Pending Approval' : 'Draft';
+  const confirm = () => post(mode === 'approval' ? route('admin.po-approvals.approve', data.poNumber) : route('reorder.draft', data.sku), { preserveScroll: true, onSuccess: onBack });
+  const reject = () => {
+    if (!showRejectField) { setShowRejectField(true); return; }
+    if (!form.reason.trim() || submitting) return;
+    post(route('admin.po-approvals.reject', data.poNumber), { preserveScroll: true, onSuccess: onBack });
+  };
   return (
     <Dialog open onClose={() => { if (!submitting) onBack(); }} aria-label="Purchase order draft preview" className="fixed inset-0 z-50 overflow-y-auto bg-foreground/50 px-4 py-8">
       <div className="flex min-h-full items-center justify-center">
@@ -60,7 +71,7 @@ export function PODraftPreviewModal({ data, onBack }: { data: PODraftPreviewData
                     "border-dashed border-border text-muted-foreground"
                   }`}
                 >
-                  Draft
+                  {status}
                 </span>
               </div>
             </div>
@@ -116,7 +127,7 @@ export function PODraftPreviewModal({ data, onBack }: { data: PODraftPreviewData
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">Status</dt>
                   <dd className="font-semibold">
-                    Draft
+                    {status}
                   </dd>
                 </div>
 
@@ -238,9 +249,10 @@ export function PODraftPreviewModal({ data, onBack }: { data: PODraftPreviewData
 
 
         {Object.entries(errors).map(([field, message]) => <p role="alert" key={field} className="px-6 py-2 text-sm text-danger">{message}</p>)}
+        {mode === 'approval' && showRejectField && <label className="block border-t border-border px-6 py-4 text-xs"><span className="font-semibold text-danger">Reason for rejection (required)</span><textarea autoFocus maxLength={2000} rows={2} disabled={submitting} value={form.reason} onChange={e => setData('reason', e.target.value)} placeholder="e.g. Unit price higher than last agreed rate" className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" /></label>}
         <div className="flex gap-2 border-t border-border px-6 py-3">
-          <button disabled={submitting} onClick={onBack} className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm">Cancel</button>
-          <button disabled={submitting} onClick={() => post(route('reorder.draft', data.sku), { preserveScroll: true, onSuccess: onBack })} className="flex-1 rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background disabled:opacity-50">{submitting ? 'Processing...' : 'Confirm Draft'}</button>
+          {mode === 'approval' ? <button disabled={submitting || (showRejectField && !form.reason.trim())} onClick={reject} className="flex-1 rounded-lg border border-danger/40 px-4 py-2.5 text-sm text-danger disabled:opacity-50">{showRejectField ? 'Confirm Rejection' : 'Reject'}</button> : <button disabled={submitting} onClick={onBack} className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm">Cancel</button>}
+          <button disabled={submitting || showRejectField} onClick={confirm} className="flex-1 rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background disabled:opacity-50">{submitting ? 'Processing...' : mode === 'approval' ? 'Approve' : 'Confirm Draft'}</button>
         </div>
       </DialogPanel>
       </div>
