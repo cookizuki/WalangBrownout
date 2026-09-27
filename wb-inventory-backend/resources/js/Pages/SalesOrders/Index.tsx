@@ -47,7 +47,7 @@ export default function SalesOrdersPage({ orders }: { orders: SalesOrder[] }) {
   }, [orders, q]);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-2 p-4 sm:p-8"><Head title="Sales Orders" />
+    <div className="space-y-2"><Head title="Sales Orders" />
       <SectionLabel>
         Sales orders — derived from the pick queue; fulfillment status at a glance
       </SectionLabel>

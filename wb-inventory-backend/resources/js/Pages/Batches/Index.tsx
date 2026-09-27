@@ -23,7 +23,7 @@ export default function BatchesIndex({ batches, canAdjust, filters }: {
     return () => window.clearTimeout(timer);
   }, [q, filters.q]);
   return (
-    <main className="mx-auto max-w-7xl space-y-2 p-4 sm:p-8">
+    <div className="space-y-2">
       <Head title="Inventory Batches" />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-foreground">
@@ -115,6 +115,6 @@ export default function BatchesIndex({ batches, canAdjust, filters }: {
           Days-left countdown drives the expiry markdown flag · pick-order badge #1 = oldest lot with stock remaining
         </p>
       </div>
-    </main>
+    </div>
   );
 }

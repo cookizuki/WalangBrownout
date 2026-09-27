@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Role;
+use App\Models\AuditLog;
 use App\Models\CycleCount;
 use App\Models\InventoryBatch;
 use App\Models\Product;
@@ -62,6 +63,14 @@ class CycleCountController extends Controller
                 }
             }
             $count->update(['counted_qty' => $quantity, 'status' => 'DONE']);
+            AuditLog::create([
+                'id' => 'AU-'.Str::ulid(),
+                'user_id' => $request->user()->id,
+                'user_name' => $request->user()->name,
+                'action' => 'Submitted cycle count',
+                'target' => "{$count->id} \u{2014} Counted: {$quantity}, Variance: {$variance}",
+                'timestamp' => now(),
+            ]);
         }, 3);
 
         return to_route('counts.index');
@@ -85,6 +94,14 @@ class CycleCountController extends Controller
             }
             CycleCount::create(['id' => $id, 'sku' => $count->sku, 'location_id' => $count->location_id,
                 'system_qty' => $count->system_qty, 'counted_qty' => null, 'due_date' => now('UTC')->toDateString(), 'status' => 'PENDING']);
+            AuditLog::create([
+                'id' => 'AU-'.Str::ulid(),
+                'user_id' => $request->user()->id,
+                'user_name' => $request->user()->name,
+                'action' => 'Requested recount',
+                'target' => "{$count->id} \u{2192} {$id}",
+                'timestamp' => now(),
+            ]);
         }, 3);
 
         return to_route('counts.index');

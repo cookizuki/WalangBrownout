@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Role;
 use App\Http\Requests\BatchAdjustmentRequest;
+use App\Models\AuditLog;
 use App\Models\InventoryBatch;
 use App\Models\TransactionLog;
 use Carbon\CarbonImmutable;
@@ -81,7 +82,14 @@ class BatchController extends Controller
                 'note' => $data['notes'] ?? null,
                 'timestamp' => now(),
             ]);
-            // TODO: logAudit
+            AuditLog::create([
+                'id' => 'AU-'.Str::ulid(),
+                'user_id' => $request->user()->id,
+                'user_name' => $request->user()->name,
+                'action' => 'Reported adjustment',
+                'target' => "Batch: {$lockedBatch->id}",
+                'timestamp' => now(),
+            ]);
         });
 
         return back();

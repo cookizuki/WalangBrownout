@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\WarehouseLocationRequest;
+use App\Models\AuditLog;
 use App\Models\WarehouseLocation;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Response;
 
@@ -33,7 +35,14 @@ class WarehouseLocationController extends Controller
         } catch (UniqueConstraintViolationException $exception) {
             throw ValidationException::withMessages(['aisle' => 'This warehouse location already exists.']);
         }
-        // TODO: logAudit
+        AuditLog::create([
+            'id' => 'AU-'.Str::ulid(),
+            'user_id' => $request->user()->id,
+            'user_name' => $request->user()->name,
+            'action' => 'Added location',
+            'target' => $code,
+            'timestamp' => now(),
+        ]);
 
         return to_route('admin.suppliers-locations.index');
     }
@@ -41,7 +50,14 @@ class WarehouseLocationController extends Controller
     public function update(WarehouseLocationRequest $request, WarehouseLocation $location): RedirectResponse
     {
         $location->update($request->validated());
-        // TODO: logAudit
+        AuditLog::create([
+            'id' => 'AU-'.Str::ulid(),
+            'user_id' => $request->user()->id,
+            'user_name' => $request->user()->name,
+            'action' => 'Updated location',
+            'target' => $location->code,
+            'timestamp' => now(),
+        ]);
 
         return to_route('admin.suppliers-locations.index');
     }

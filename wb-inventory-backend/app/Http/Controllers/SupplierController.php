@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\SupplierRequest;
+use App\Models\AuditLog;
 use App\Models\Supplier;
 use App\Models\WarehouseLocation;
 use Illuminate\Http\RedirectResponse;
@@ -32,8 +33,15 @@ class SupplierController extends Controller
 
     public function store(SupplierRequest $request): RedirectResponse
     {
-        Supplier::create(collect($request->validated())->mapWithKeys(fn ($value, $key): array => [Str::snake($key) => $value])->all());
-        // TODO: logAudit
+        $supplier = Supplier::create(collect($request->validated())->mapWithKeys(fn ($value, $key): array => [Str::snake($key) => $value])->all());
+        AuditLog::create([
+            'id' => 'AU-'.Str::ulid(),
+            'user_id' => $request->user()->id,
+            'user_name' => $request->user()->name,
+            'action' => 'Added supplier',
+            'target' => $supplier->name,
+            'timestamp' => now(),
+        ]);
 
         return to_route('admin.suppliers-locations.index');
     }
@@ -41,7 +49,14 @@ class SupplierController extends Controller
     public function update(SupplierRequest $request, Supplier $supplier): RedirectResponse
     {
         $supplier->update(collect($request->validated())->mapWithKeys(fn ($value, $key): array => [Str::snake($key) => $value])->all());
-        // TODO: logAudit
+        AuditLog::create([
+            'id' => 'AU-'.Str::ulid(),
+            'user_id' => $request->user()->id,
+            'user_name' => $request->user()->name,
+            'action' => 'Updated supplier',
+            'target' => $supplier->name,
+            'timestamp' => now(),
+        ]);
 
         return to_route('admin.suppliers-locations.index');
     }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AlertAcknowledgement;
 use App\Models\CycleCount;
 use App\Models\InventoryBatch;
 use App\Models\Product;
@@ -11,6 +12,13 @@ use Illuminate\Support\Collection;
 
 class AlertService
 {
+    public function open(): Collection
+    {
+        $acknowledged = AlertAcknowledgement::pluck('alert_id')->flip();
+
+        return $this->compute()->reject(fn (array $alert): bool => $acknowledged->has($alert['id']))->values();
+    }
+
     public function compute(): Collection
     {
         $alerts = collect();

@@ -26,7 +26,7 @@ export default function ReceivingPage({ receivingLines, locations }: { receiving
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-8">
+    <div className="space-y-5">
       <Head title="Receiving & Putaway" />
       {notice && <div role="status" className="fixed bottom-5 right-5 z-40 max-w-sm rounded-xl border border-border bg-surface p-4 shadow-xl"><div className="flex justify-between gap-4"><strong>{notice.title}</strong><button aria-label="Dismiss notification" onClick={() => setNotice(null)}>X</button></div><p className="mt-1 text-sm">{notice.description}</p>{notice.batch && <button className="mt-3 rounded-md border border-border px-3 py-1.5 text-sm" onClick={() => printBatchLabel(notice.batch!)}>Print label</button>}</div>}
       <div className="space-y-2">

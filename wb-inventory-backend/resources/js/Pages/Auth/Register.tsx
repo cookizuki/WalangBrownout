@@ -188,7 +188,7 @@ export default function Register() {
                                             Role — select one
                                         </p>
                                         <div className="flex flex-col gap-2">
-                                            {ROLES.map((r) => {
+                                            {ROLES.filter(r => r.key !== 'ADMIN').map((r) => {
                                                 const active = data.role === r.key;
                                                 return (
                                                     <button

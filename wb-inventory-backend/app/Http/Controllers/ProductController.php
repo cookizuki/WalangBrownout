@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProductRequest;
+use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
@@ -56,7 +57,14 @@ class ProductController extends Controller
         } catch (UniqueConstraintViolationException $exception) {
             throw ValidationException::withMessages(['sku' => 'The sku has already been taken.']);
         }
-        // TODO: logAudit
+        AuditLog::create([
+            'id' => 'AU-'.Str::ulid(),
+            'user_id' => $request->user()->id,
+            'user_name' => $request->user()->name,
+            'action' => 'Added product',
+            'target' => "SKU: {$data['sku']}",
+            'timestamp' => now(),
+        ]);
 
         return to_route('admin.products.index');
     }
@@ -68,7 +76,14 @@ class ProductController extends Controller
             ...$data,
             'seasonal_factor' => $data['seasonal_flag'] ? ($product->seasonal_factor ?? 2.0) : null,
         ]);
-        // TODO: logAudit
+        AuditLog::create([
+            'id' => 'AU-'.Str::ulid(),
+            'user_id' => $request->user()->id,
+            'user_name' => $request->user()->name,
+            'action' => 'Updated product',
+            'target' => "SKU: {$product->sku}",
+            'timestamp' => now(),
+        ]);
 
         return to_route('admin.products.index');
     }

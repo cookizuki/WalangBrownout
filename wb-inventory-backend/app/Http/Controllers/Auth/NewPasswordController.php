@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -50,6 +51,15 @@ class NewPasswordController extends Controller
                     'password' => Hash::make($request->password),
                     'remember_token' => Str::random(60),
                 ])->save();
+
+                AuditLog::create([
+                    'id' => 'AU-'.Str::ulid(),
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                    'action' => 'Reset password',
+                    'target' => $user->email,
+                    'timestamp' => now(),
+                ]);
 
                 event(new PasswordReset($user));
             }

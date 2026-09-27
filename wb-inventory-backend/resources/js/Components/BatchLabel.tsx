@@ -1,3 +1,9 @@
+function escapeHtml(value: string | number): string {
+  return String(value).replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[character]!);
+}
+
 export function printBatchLabel(input: {
   sku: string; productName: string; batchId: string;
   quantity: number; dateReceived: string; expirationDate?: string;
@@ -9,7 +15,7 @@ export function printBatchLabel(input: {
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Batch Label — ${input.batchId}</title>
+        <title>Batch Label — ${escapeHtml(input.batchId)}</title>
         <style>
           @page { size: 4in 3in; margin: 0.15in; }
           * { box-sizing: border-box; }
@@ -43,32 +49,32 @@ export function printBatchLabel(input: {
       <body>
         <div class="label">
           <div class="brand">WalangBrownout · Batch Label</div>
-          <div class="product">${input.productName}</div>
-          <div class="sku">SKU: ${input.sku}</div>
+          <div class="product">${escapeHtml(input.productName)}</div>
+          <div class="sku">SKU: ${escapeHtml(input.sku)}</div>
 
           <div class="row">
             <div class="field">
               <div class="field-label">Batch ID</div>
-              <div class="field-value">${input.batchId}</div>
+              <div class="field-value">${escapeHtml(input.batchId)}</div>
             </div>
             <div class="field">
               <div class="field-label">Quantity</div>
-              <div class="field-value">${input.quantity}</div>
+              <div class="field-value">${escapeHtml(input.quantity)}</div>
             </div>
           </div>
 
           <div class="row">
             <div class="field">
               <div class="field-label">Received</div>
-              <div class="field-value">${input.dateReceived}</div>
+              <div class="field-value">${escapeHtml(input.dateReceived)}</div>
             </div>
             <div class="field">
               <div class="field-label">Expiry ${input.expirationDate ? "" : "(n/a)"}</div>
-              <div class="field-value ${input.expirationDate ? "expiry-warn" : ""}">${input.expirationDate ?? "—"}</div>
+              <div class="field-value ${input.expirationDate ? "expiry-warn" : ""}">${escapeHtml(input.expirationDate ?? "—")}</div>
             </div>
           </div>
 
-          <div class="barcode">*${input.batchId}*</div>
+          <div class="barcode">*${escapeHtml(input.batchId)}*</div>
         </div>
         <script>window.onload = () => window.print();</script>
       </body>

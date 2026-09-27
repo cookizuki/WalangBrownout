@@ -19,7 +19,7 @@ export default function StockCountsPage({ mode, counts, transactions }: { mode: 
   const [requested, setRequested] = useState<string[]>([]);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-2 p-4 sm:p-8">
+    <div className="space-y-2">
       <Head title="Stock Counts" />
       {notice && <p role="status" className="rounded-lg border border-border bg-surface p-3 text-sm">{notice}</p>}
       {Object.entries(form.errors).map(([key, error]) => <p key={key} role="alert" className="text-sm text-danger">{String(error)}</p>)}

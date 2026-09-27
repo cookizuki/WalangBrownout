@@ -5,7 +5,7 @@ type PendingPO = PODraftPreviewData & { poNumber: string; totalCost: number; req
 export default function PurchaseOrderApprovals({ pending }: { pending: PendingPO[] }) {
   const [reviewing, setReviewing] = useState<string | null>(null);
   const selected = pending.find(po => po.poNumber === reviewing);
-  return <div className="mx-auto max-w-7xl space-y-2 p-4 sm:p-8">
+  return <div className="space-y-2">
     <Head title="Purchase Order Approvals" />
     <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">purchase order approval queue (Purchasing Manager responsibility)</p>
     <div className="card-surface">

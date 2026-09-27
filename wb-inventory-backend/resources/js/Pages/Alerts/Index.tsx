@@ -6,7 +6,7 @@ type Alert = { id: string; sku: string; productName: string; batchId?: string; t
 
 export default function AlertsPage({ alerts }: { alerts: Alert[] }) {
   return (
-    <main className="mx-auto max-w-7xl space-y-4 p-4 sm:p-8">
+    <div className="space-y-4">
       <Head title="Alerts" />
       <div className="card-surface overflow-hidden">
         <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
@@ -35,7 +35,7 @@ export default function AlertsPage({ alerts }: { alerts: Alert[] }) {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 

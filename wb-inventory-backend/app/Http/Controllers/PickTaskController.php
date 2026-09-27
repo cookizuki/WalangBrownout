@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\InventoryBatch;
 use App\Models\PickTask;
 use App\Models\Product;
@@ -45,6 +46,14 @@ class PickTaskController extends Controller
             $task->update(['status' => 'DONE']);
             TransactionLog::create(['id' => 'T-'.Str::ulid(), 'batch_id' => $batch->id, 'sku' => $task->sku, 'user_id' => $request->user()->id,
                 'type' => 'SALE', 'quantity_delta' => -$task->quantity, 'channel' => 'WAREHOUSE', 'timestamp' => now()]);
+            AuditLog::create([
+                'id' => 'AU-'.Str::ulid(),
+                'user_id' => $request->user()->id,
+                'user_name' => $request->user()->name,
+                'action' => 'Completed pick task',
+                'target' => "{$task->id} \u{2014} Batch: {$batch->id}, Quantity: {$task->quantity}",
+                'timestamp' => now(),
+            ]);
         }, 3);
 
         return to_route('picks.index');
@@ -68,6 +77,16 @@ class PickTaskController extends Controller
                     'note' => $data['reason']." \u{2014} flagged via FIFO exception on {$task->id}"]);
             }
             $next = InventoryBatch::where('sku', $task->sku)->where('quantity_remaining', '>', 0)->orderBy('date_received')->orderBy('id')->lockForUpdate()->first();
+            if ($quantity > 0 || $next) {
+                AuditLog::create([
+                    'id' => 'AU-'.Str::ulid(),
+                    'user_id' => $request->user()->id,
+                    'user_name' => $request->user()->name,
+                    'action' => 'Reported FIFO exception',
+                    'target' => "{$task->id} \u{2014} Batch: {$batch->id}, Reason: {$data['reason']}, Written off: {$quantity}, Replacement: ".($next?->id ?? 'none'),
+                    'timestamp' => now(),
+                ]);
+            }
             if ($next) {
                 $task->update(['batch_id' => $next->id, 'location_id' => $next->location_id]);
 

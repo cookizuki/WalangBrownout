@@ -5,7 +5,7 @@ import { money, type PODraftPreviewData } from '@/Components/PODraftPreviewModal
 import { SeasonalConfigPanel, type SeasonalProduct } from '@/Components/SeasonalConfigPanel';
 type ReorderRow = PODraftPreviewData & { onHand: number; rop: number; gap: number; alreadyPending: boolean };
 export default function Reorder({ rows, seasonalProducts }: { rows: ReorderRow[]; seasonalProducts: SeasonalProduct[] }) {
-  return <main className="mx-auto max-w-7xl space-y-5 p-4 sm:p-8">
+  return <div className="space-y-5">
     <Head title="Reorder Review" />
     <div className="space-y-2"><SectionLabel>Reorder queue — ROP breaches ready for purchasing</SectionLabel>
       <div className="card-surface overflow-hidden">
@@ -20,5 +20,5 @@ export default function Reorder({ rows, seasonalProducts }: { rows: ReorderRow[]
       </div>
     </div>
     <div className="space-y-2"><SectionLabel>Seasonal reorder settings — Inventory Manager responsibility</SectionLabel><SeasonalConfigPanel products={seasonalProducts} /></div>
-  </main>;
+  </div>;
 }

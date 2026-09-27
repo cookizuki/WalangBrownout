@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Enums\Role;
 use App\Models\InventoryBatch;
 use App\Models\WarehouseLocation;
+use App\Services\AlertService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -34,6 +35,10 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'shell' => fn () => $request->user() ? [
+                'navigation' => collect(config('navigation.roles.'.$request->user()->role->value, []))->map(fn (string $key): array => ['key' => $key, ...config('navigation.pages.'.$key)])->values(),
+                'openAlerts' => app(AlertService::class)->open()->count(),
+            ] : null,
             'fifoMessage' => fn () => $request->session()->get('fifoMessage'),
             'movementOptions' => fn () => $request->user()?->hasRole(Role::ADMIN, Role::WAREHOUSE_STAFF) ? [
                 'batches' => InventoryBatch::with('product')->orderBy('id')->get()->map(fn ($batch): array => ['id' => $batch->id, 'productName' => $batch->product->name, 'quantityRemaining' => $batch->quantity_remaining]),

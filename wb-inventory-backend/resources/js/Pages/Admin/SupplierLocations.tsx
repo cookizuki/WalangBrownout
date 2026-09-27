@@ -39,7 +39,7 @@ export default function SupplierLocations({ suppliers, locations }: { suppliers:
   const [editing, setEditing] = useState<Supplier>();
 
   return (
-    <main className="mx-auto max-w-7xl space-y-2 p-4 sm:p-8">
+    <div className="space-y-2">
       <Head title="Suppliers & Locations" />
       <h1 className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">supplier directory & warehouse locations (System Administrator responsibility)</h1>
       <div className="grid gap-5 lg:grid-cols-2">
@@ -81,6 +81,6 @@ export default function SupplierLocations({ suppliers, locations }: { suppliers:
       </div>
       {showForm && <SupplierDirectoryForm onClose={() => setShowForm(false)} />}
       {editing && <SupplierDirectoryForm initial={editing} onClose={() => setEditing(undefined)} />}
-    </main>
+    </div>
   );
 }

@@ -14,7 +14,7 @@ export default function TransactionLog({ transactions, filters }: { transactions
     return () => window.clearTimeout(timer);
   }, [q, type, filters.q, filters.type]);
   return (
-    <main className="mx-auto max-w-7xl space-y-2 p-4 sm:p-8">
+    <div className="space-y-2">
       <Head title="Transaction Log" />
       <SectionLabel>Transaction log — every stock movement, newest first</SectionLabel>
       <div className="card-surface overflow-hidden">
@@ -70,6 +70,6 @@ export default function TransactionLog({ transactions, filters }: { transactions
           Adjustments raised from stock counts and damage reports appear here automatically
         </p>
       </div>
-    </main>
+    </div>
   );
 }

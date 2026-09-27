@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\PendingPurchaseOrder;
 use App\Models\Product;
 use App\Models\SeasonalWindow;
@@ -61,12 +62,19 @@ class PurchaseOrderController extends Controller
                     throw ValidationException::withMessages(['quantity' => 'A purchase order for this SKU is already pending.']);
                 }
                 $cents = (int) str_replace('.', '', $product->unit_cost) * (int) $data['quantity'];
-                PendingPurchaseOrder::create([
+                $po = PendingPurchaseOrder::create([
                     'id' => 'PO-'.Str::ulid(), 'supplier_id' => $product->supplier_id, 'sku' => $product->sku,
                     'quantity' => $data['quantity'], 'total_cost' => intdiv($cents, 100).'.'.str_pad((string) ($cents % 100), 2, '0', STR_PAD_LEFT),
                     'requested_by' => $request->user()->id, 'requested_at' => now('UTC')->toDateString(),
                 ]);
-                // TODO: logAudit
+                AuditLog::create([
+                    'id' => 'AU-'.Str::ulid(),
+                    'user_id' => $request->user()->id,
+                    'user_name' => $request->user()->name,
+                    'action' => 'Drafted purchase order',
+                    'target' => $po->id,
+                    'timestamp' => now(),
+                ]);
             });
         } catch (UniqueConstraintViolationException $exception) {
             throw ValidationException::withMessages(['quantity' => 'A purchase order for this SKU is already pending.']);
@@ -82,14 +90,21 @@ class PurchaseOrderController extends Controller
             'endMonth' => ['required', 'integer', 'between:1,12'],
             'multiplier' => ['required', 'numeric', 'gt:0', 'max:99.99', 'decimal:0,2'],
         ]);
-        DB::transaction(function () use ($product, $data): void {
+        DB::transaction(function () use ($product, $data, $request): void {
             $product = Product::whereKey($product->sku)->lockForUpdate()->firstOrFail();
             if (! $product->seasonal_flag) {
                 throw ValidationException::withMessages(['multiplier' => 'This product is not seasonal.']);
             }
             $product->update(['seasonal_factor' => $data['multiplier']]);
             SeasonalWindow::updateOrCreate(['sku' => $product->sku], ['start_month' => $data['startMonth'], 'end_month' => $data['endMonth']]);
-            // TODO: logAudit
+            AuditLog::create([
+                'id' => 'AU-'.Str::ulid(),
+                'user_id' => $request->user()->id,
+                'user_name' => $request->user()->name,
+                'action' => 'Updated seasonal multiplier',
+                'target' => "SKU: {$product->sku} \u{2192} ".(float) $data['multiplier']."\u{00D7}",
+                'timestamp' => now(),
+            ]);
         });
 
         return to_route('reorder.index');

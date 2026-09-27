@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\InventoryBatch;
 use App\Models\Product;
 use App\Models\TransactionLog;
@@ -34,9 +35,20 @@ class MovementController extends Controller
             if ($batch->quantity_remaining + $delta > 2147483647) {
                 throw ValidationException::withMessages(['quantity' => 'The resulting quantity exceeds the stock limit.']);
             }
+            $fromLocationId = $batch->location_id;
             $batch->update($data['type'] === 'TRANSFER' ? ['location_id' => $data['to_location_id']] : ['quantity_remaining' => $batch->quantity_remaining + $delta]);
             TransactionLog::create(['id' => 'T-'.Str::ulid(), 'batch_id' => $batch->id, 'sku' => $batch->sku, 'user_id' => $request->user()->id,
                 'type' => $data['type'], 'quantity_delta' => $delta, 'channel' => 'WAREHOUSE', 'timestamp' => now()]);
+            AuditLog::create([
+                'id' => 'AU-'.Str::ulid(),
+                'user_id' => $request->user()->id,
+                'user_name' => $request->user()->name,
+                'action' => match ($data['type']) {
+                    'RETURN' => 'Logged return', 'TRANSFER' => 'Transferred batch', 'WRITE_OFF' => 'Wrote off stock'
+                },
+                'target' => "Batch: {$batch->id}".($data['type'] === 'TRANSFER' ? " \u{2014} Location: {$fromLocationId} \u{2192} {$batch->location_id}" : " \u{2014} Quantity: {$quantity}"),
+                'timestamp' => now(),
+            ]);
         }, 3);
 
         return back();

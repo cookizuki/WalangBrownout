@@ -28,7 +28,7 @@ export default function PickTasksPage({ tasks: pickTasks }: { tasks: PickTask[] 
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-2 p-4 sm:p-8">
+    <div className="space-y-2">
       <Head title="Pick Tasks" />
       {notice && <p role="status" className="rounded-lg border border-border bg-surface p-3 text-sm">{notice}</p>}
       {Object.entries(form.errors).map(([key, error]) => <p role="alert" key={key} className="text-sm text-danger">{String(error)}</p>)}

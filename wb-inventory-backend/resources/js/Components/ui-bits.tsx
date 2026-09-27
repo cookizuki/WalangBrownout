@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Clock3, Loader2, CheckCircle2, type LucideIcon } from "lucide-react";
+import { Clock3, Loader2, CheckCircle2, CircleCheck, CircleAlert, CircleX, type LucideIcon } from "lucide-react";
 
 export function Th({ children }: { children: ReactNode }) {
   return (
@@ -105,3 +105,21 @@ export function TaskPill({ status }: { status: "PENDING" | "IN_PROGRESS" | "DONE
     </span>
   );
 }
+
+export function StatusPill({ status }: { status: "OK" | "WATCH" | "REORDER" }) {
+  const map = {
+    OK: { cls: "border-success/40 text-success", icon: CircleCheck },
+    WATCH: { cls: "border-warning/50 text-warning", icon: CircleAlert },
+    REORDER: { cls: "border-danger/50 text-danger", icon: CircleX },
+  } as const;
+  const { cls, icon: Icon } = map[status];
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold ${cls}`}>
+      <Icon className="h-3 w-3" strokeWidth={2.5} />
+      {status}
+    </span>
+  );
+}
+
+
+export function daysLeft(dateISO?: string | null): number | null { return dateISO ? Math.ceil((new Date(dateISO).getTime() - Date.now()) / 86400000) : null; }

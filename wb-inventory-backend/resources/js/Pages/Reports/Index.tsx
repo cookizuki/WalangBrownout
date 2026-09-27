@@ -56,7 +56,7 @@ export default function ReportsPage({ shrinkageByMonth, velocityBySku, valuation
   const abcColor = { A: c["--abc-a"], B: c["--abc-b"], C: c["--abc-c"] } as const;
 
   return (
-    <div id="reports-print-area" className="mx-auto max-w-7xl space-y-6 p-4 sm:p-8"><Head title="Reports" />
+    <div id="reports-print-area" className="space-y-6"><Head title="Reports" />
       <div className="flex items-center justify-between print:hidden">
         <p className="text-xs text-muted-foreground"></p>
         <button

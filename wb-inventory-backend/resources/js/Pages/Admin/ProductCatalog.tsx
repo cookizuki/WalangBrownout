@@ -13,7 +13,7 @@ export default function ProductCatalog({ products }: { products: Product[] }) {
   const [editing, setEditing] = useState<Product>();
 
   return (
-    <main className="mx-auto max-w-7xl space-y-2 p-4 sm:p-8">
+    <div className="space-y-2">
       <Head title="Product Catalog" />
       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
         product catalog (System Administrator responsibility)
@@ -41,6 +41,6 @@ export default function ProductCatalog({ products }: { products: Product[] }) {
       </div>
       {showForm && <ProductFormModal onClose={() => setShowForm(false)} />}
       {editing && <ProductFormModal initial={editing} onClose={() => setEditing(undefined)} />}
-    </main>
+    </div>
   );
 }

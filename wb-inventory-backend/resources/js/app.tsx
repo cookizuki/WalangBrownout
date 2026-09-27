@@ -3,7 +3,7 @@ import './bootstrap';
 
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import AppLayout from '@/Layouts/AppLayout';
 import type { ComponentType, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -16,8 +16,8 @@ createInertiaApp({
         const page = await resolvePageComponent<PageModule>(
             `./Pages/${name}.tsx`, import.meta.glob<PageModule>('./Pages/**/*.tsx'),
         );
-        if (/^(Admin|Reorder|Batches|TransactionLog|Alerts|Receiving|PickTasks|SalesOrders|StockCounts|Reports)\//.test(name)) {
-            page.default.layout = (content) => <AuthenticatedLayout>{content}</AuthenticatedLayout>;
+        if (!name.startsWith('Auth/') && name !== 'Welcome') {
+            page.default.layout = (content) => <AppLayout>{content}</AppLayout>;
         }
         return page;
     },

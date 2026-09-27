@@ -1,0 +1,20 @@
+import { useState } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
+import { Th, Td, AnimatedRow } from '@/Components/ui-bits';
+import { AuditLogPanel, type AuditEntry } from '@/Components/AuditLogPanel';
+import { ROLES, roleLabel } from '@/lib/roles';
+import type { User } from '@/types';
+function UserForm({ user, close }: { user: User | null; close: () => void }) {
+ const form = useForm({ name: user?.name ?? '', email: user?.email ?? '', role: user?.role ?? 'INVENTORY_STAFF', status: user?.status ?? 'Active', password: '' });
+ return <Dialog open onClose={() => { if (!form.processing) close(); }} className="relative z-50"><div className="fixed inset-0 bg-foreground/40" /><div className="fixed inset-0 flex items-center justify-center p-4"><DialogPanel className="w-full max-w-lg rounded-xl border border-border bg-surface p-6"><DialogTitle className="text-lg font-semibold">{user ? 'Edit User' : 'Add User'}</DialogTitle><form className="mt-4 space-y-3" onSubmit={e => { e.preventDefault(); const options = { preserveScroll: true, onSuccess: close }; user ? form.put(route('admin.users.update', user.id), options) : form.post(route('admin.users.store'), options); }}>
+ {(['name','email','password'] as const).map(key => <label key={key} className="block text-sm capitalize">{key}{key === 'password' && user && ' (leave blank to keep)'}<input type={key === 'name' ? 'text' : key} required={key !== 'password' || !user} value={form.data[key]} onChange={e => form.setData(key,e.target.value)} className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2" /></label>)}
+ <label className="block text-sm">Role<select value={form.data.role} onChange={e => form.setData('role',e.target.value as typeof form.data.role)} className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2">{ROLES.map(role => <option key={role.key} value={role.key}>{role.label}</option>)}</select></label>
+ <label className="block text-sm">Status<select value={form.data.status} onChange={e => form.setData('status',e.target.value as 'Active'|'Inactive')} className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"><option>Active</option><option>Inactive</option></select></label>
+ {Object.entries(form.errors).map(([key,error]) => <p role="alert" key={key} className="text-sm text-danger">{error}</p>)}<div className="flex gap-3"><button disabled={form.processing} className="rounded-md bg-foreground px-4 py-2 text-background">{user ? 'Save user' : 'Create user'}</button><button type="button" disabled={form.processing} onClick={close}>Cancel</button></div>
+ </form></DialogPanel></div></Dialog>;
+}
+export default function Users({ users, auditLogs }: { users: User[]; auditLogs: AuditEntry[] }) {
+ const [editing, setEditing] = useState<User | null | undefined>(undefined);
+ return <div className="space-y-6"><Head title="Admin" /><section className="card-surface overflow-hidden"><div className="flex items-center justify-between border-b border-border p-5"><div><h2 className="text-lg font-semibold">Users</h2><p className="text-xs text-muted-foreground">Manage accounts, roles, and access</p></div><button onClick={() => setEditing(null)} className="rounded-md bg-foreground px-4 py-2 text-sm text-background">+ Add User</button></div><div className="overflow-x-auto"><table className="w-full min-w-180 text-sm"><thead><tr><Th>User</Th><Th>Email</Th><Th>Role</Th><Th>Status</Th><Th>Actions</Th></tr></thead><tbody>{users.map((user,i) => <AnimatedRow key={user.id} delay={i*60}><Td>{user.name}</Td><Td>{user.email}</Td><Td>{roleLabel(user.role!)}</Td><Td>{user.status}</Td><Td><button onClick={() => setEditing(user)} className="underline">Edit</button></Td></AnimatedRow>)}</tbody></table></div></section>{editing !== undefined && <UserForm key={editing?.id ?? 'new'} user={editing} close={() => setEditing(undefined)} />}<AuditLogPanel entries={auditLogs} /><Link href={route('admin.audit.index')} className="text-sm underline">View full audit trail</Link></div>;
+}

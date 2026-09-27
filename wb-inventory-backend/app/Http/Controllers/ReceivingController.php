@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\InventoryBatch;
+use App\Models\PurchaseOrder;
 use App\Models\ReceivingLine;
 use App\Models\TransactionLog;
 use App\Models\WarehouseLocation;
@@ -38,6 +40,7 @@ class ReceivingController extends Controller
     {
         $data = $request->validate(['quantity' => ['required', 'integer', 'min:1', 'max:2147483647'], 'expiration_date' => ['required', 'date_format:Y-m-d']]);
         $batch = DB::transaction(function () use ($line, $request, $data): InventoryBatch {
+            $order = PurchaseOrder::whereKey($line->po_number)->lockForUpdate()->first();
             $line = ReceivingLine::lockForUpdate()->findOrFail($line->id);
             $remaining = $line->quantity_ordered - $line->quantity_received;
             if ($line->status === 'PUT_AWAY' || $data['quantity'] > $remaining) {
@@ -52,10 +55,30 @@ class ReceivingController extends Controller
             $received = $line->quantity_received + $data['quantity'];
             $complete = $received === $line->quantity_ordered;
             $line->update(['quantity_received' => $received, 'status' => $complete ? 'PUT_AWAY' : 'ARRIVED', 'received_date' => $complete ? $today : $line->received_date]);
+            if ($complete && $order && in_array($order->status, ['SUBMITTED', 'APPROVED'], true)) {
+                $lines = ReceivingLine::where('po_number', $order->id)->lockForUpdate()->get();
+                if ($lines->every(fn (ReceivingLine $linked): bool => $linked->status === 'PUT_AWAY' && $linked->quantity_received >= $linked->quantity_ordered)
+                    && $lines->sum('quantity_received') >= $order->quantity) {
+                    $order->update(['status' => 'RECEIVED']);
+                    AuditLog::create([
+                        'id' => 'AU-'.Str::ulid(), 'user_id' => $request->user()->id, 'user_name' => $request->user()->name,
+                        'action' => 'Received purchase order', 'target' => $order->id, 'timestamp' => now(),
+                    ]);
+                }
+            }
             TransactionLog::create([
                 'id' => 'T-'.Str::ulid(), 'batch_id' => $batch->id, 'sku' => $line->sku,
                 'user_id' => $request->user()->id, 'type' => 'RECEIPT', 'quantity_delta' => $data['quantity'],
                 'channel' => 'WAREHOUSE', 'timestamp' => now(),
+            ]);
+
+            AuditLog::create([
+                'id' => 'AU-'.Str::ulid(),
+                'user_id' => $request->user()->id,
+                'user_name' => $request->user()->name,
+                'action' => 'Received delivery',
+                'target' => "{$line->id} \u{2014} Batch: {$batch->id}, Quantity: {$data['quantity']}",
+                'timestamp' => now(),
             ]);
 
             return $batch;

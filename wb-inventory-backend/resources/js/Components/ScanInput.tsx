@@ -19,7 +19,7 @@ export function ScanInput({
     const refocus = (e: MouseEvent) => {
       // Don't steal focus from other real inputs, buttons, or selects on the page.
       const target = e.target as HTMLElement;
-      if (target.closest("input, textarea, select, button, a")) return;
+      if (target.closest("input, textarea, select, button, a, [role=dialog], [cmdk-root]")) return;
       inputRef.current?.focus();
     };
     window.addEventListener("click", refocus);
@@ -41,6 +41,7 @@ export function ScanInput({
       <div className={`flex items-center gap-2.5 rounded-lg border px-3.5 py-2.5 transition-colors ${flash ? "border-success bg-success/5" : "border-border bg-background"}`}>
         <span aria-hidden className="shrink-0 text-muted-foreground">▮▮▯▮</span>
         <input
+          data-scan-input
           ref={inputRef}
           value={value}
           onChange={e => setValue(e.target.value)}

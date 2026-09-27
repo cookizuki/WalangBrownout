@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\AlertController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\CycleCountController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DemoAccountController;
 use App\Http\Controllers\MovementController;
 use App\Http\Controllers\NotificationController;
@@ -15,23 +17,16 @@ use App\Http\Controllers\ReceivingController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TransactionLogController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\WarehouseLocationController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
-
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/', [DashboardController::class, 'landing']);
+Route::get('/dashboard', [DashboardController::class, 'landing'])->middleware('auth')->name('dashboard');
+Route::get('/overview', [DashboardController::class, 'overview'])->middleware(['auth', 'role:ADMIN'])->name('overview');
+Route::get('/my-day', [DashboardController::class, 'myDay'])->middleware(['auth', 'role:INVENTORY_STAFF,WAREHOUSE_STAFF'])->name('my-day');
+Route::get('/inventory', [DashboardController::class, 'inventory'])->middleware(['auth', 'role:ADMIN,INVENTORY_STAFF'])->name('inventory');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -105,3 +100,11 @@ Route::middleware(['auth', 'role:WAREHOUSE_STAFF,INVENTORY_STAFF'])->group(funct
 });
 
 Route::get('/reports', [ReportController::class, 'index'])->middleware(['auth', 'role:ADMIN'])->name('reports.index');
+
+Route::middleware(['auth', 'role:ADMIN'])->group(function () {
+    Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');
+    Route::post('/admin/users', [UserController::class, 'store'])->name('admin.users.store');
+    Route::put('/admin/users/{user}', [UserController::class, 'update'])->name('admin.users.update');
+    Route::get('/admin/audit', [AuditLogController::class, 'index'])->name('admin.audit.index');
+    Route::get('/admin/permissions', fn () => Inertia::render('Admin/PermissionMatrix'))->name('admin.permissions');
+});

@@ -8,6 +8,16 @@ test('registration screen can be rendered', function () {
     $response->assertStatus(200);
 });
 
+test('public registration rejects administrator accounts', function () {
+    $this->post('/register', [
+        'name' => 'Unauthorized Admin', 'email' => 'admin-attempt@example.com',
+        'password' => 'password', 'password_confirmation' => 'password', 'role' => 'ADMIN',
+    ])->assertSessionHasErrors('role');
+
+    $this->assertGuest();
+    $this->assertDatabaseMissing('users', ['email' => 'admin-attempt@example.com']);
+});
+
 test('new users can register', function () {
     $response = $this->post('/register', [
         'name' => 'Test User',

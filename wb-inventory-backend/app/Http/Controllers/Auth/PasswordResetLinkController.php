@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -41,6 +43,11 @@ class PasswordResetLinkController extends Controller
         );
 
         if ($status == Password::RESET_LINK_SENT) {
+            AuditLog::create([
+                'id' => 'AU-'.Str::ulid(), 'user_id' => null, 'user_name' => 'Guest',
+                'action' => 'Requested password reset', 'target' => $request->string('email')->toString(), 'timestamp' => now(),
+            ]);
+
             return back()->with('status', __($status));
         }
 
