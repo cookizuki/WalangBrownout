@@ -22,7 +22,7 @@ class AlertService
     public function compute(): Collection
     {
         $alerts = collect();
-        $now = CarbonImmutable::now('UTC');
+        $now = CarbonImmutable::now();
         $products = Product::query()->orderBy('sku')->get()->keyBy('sku');
         foreach ($products as $product) {
             $stock = $product->onHand();
@@ -40,7 +40,7 @@ class AlertService
             }
         }
         foreach (InventoryBatch::query()->whereNotNull('expiration_date')->orderBy('id')->get() as $batch) {
-            $days = (int) ceil((CarbonImmutable::parse($batch->expiration_date->toDateString(), 'UTC')->getTimestamp() - $now->getTimestamp()) / 86400);
+            $days = (int) ceil((CarbonImmutable::parse($batch->expiration_date->toDateString())->getTimestamp() - $now->getTimestamp()) / 86400);
             if ($days <= 30) {
                 $alerts->push([
                     'id' => "A-{$batch->id}-EXP", 'sku' => $batch->sku, 'productName' => $products[$batch->sku]->name,

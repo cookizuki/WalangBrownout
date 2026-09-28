@@ -30,17 +30,15 @@ test('server chooses entry or review mode and exposes investigation transactions
     $this->actingAs(User::where('email', $email)->firstOrFail());
     $this->get('/counts?mode=entry')->assertInertia(fn (Assert $page) => $page->component('StockCounts/Index')->where('mode', $mode)->has('counts', 5)->has('transactions', $transactionCount));
 })->with([['nhimfa@walangbrownout.ph', 'entry', 0], ['lizle@walangbrownout.ph', 'review', 5]]);
-test('submitted variance changes only the first matching batch and creates one adjustment', function (int $counted, int $remaining, int $delta) {
+test('submitted variance is allocated across batches with exact deltas', function (int $counted, int $old, int $new, array $deltas) {
     $this->seed(DatabaseSeeder::class);
-    $this->post('/login', ['email' => 'nhimfa@walangbrownout.ph', 'password' => 'walangbrownout'])->assertSessionHasNoErrors();
-    $this->post('/counts/CC-2202/submit', ['counted_qty' => $counted, 'sku' => 'ACU-014', 'location_id' => 1, 'user_id' => 1])->assertRedirect('/counts');
-    $this->assertDatabaseHas('cycle_counts', ['id' => 'CC-2202', 'counted_qty' => $counted, 'status' => 'DONE']);
-    $this->assertDatabaseHas('inventory_batches', ['id' => 'B-1055', 'quantity_remaining' => $remaining]);
-    $this->assertDatabaseHas('inventory_batches', ['id' => 'B-1078', 'quantity_remaining' => 220]);
-    $this->assertDatabaseHas('transaction_logs', ['batch_id' => 'B-1055', 'sku' => 'APU-100', 'type' => 'ADJUSTMENT', 'quantity_delta' => $delta, 'user_id' => User::where('email', 'nhimfa@walangbrownout.ph')->value('id'), 'channel' => 'WAREHOUSE']);
+    $this->actingAs(User::where('email', 'nhimfa@walangbrownout.ph')->firstOrFail());
+    $this->post('/counts/CC-2202/submit', ['counted_qty' => $counted])->assertSessionHasNoErrors();
+    $this->assertDatabaseHas('inventory_batches', ['id' => 'B-1055', 'quantity_remaining' => $old]);
+    $this->assertDatabaseHas('inventory_batches', ['id' => 'B-1078', 'quantity_remaining' => $new]);
+    expect(TransactionLog::where('type', 'ADJUSTMENT')->where('sku', 'APU-100')->orderBy('batch_id')->pluck('quantity_delta')->all())->toBe($deltas);
     $this->post('/counts/CC-2202/submit', ['counted_qty' => $counted])->assertSessionHasErrors('counted_qty');
-    $this->assertDatabaseCount('transaction_logs', 6);
-})->with([[360, 140, -5], [370, 150, 5], [0, 0, -365]]);
+})->with([[360, 140, 220, [-5]], [370, 145, 225, [5]], [0, 0, 0, [-145, -220]]]);
 test('exact counts finish without stock changes or adjustment logs', function () {
     $this->seed(DatabaseSeeder::class);
     $this->actingAs(User::where('email', 'nhimfa@walangbrownout.ph')->firstOrFail());
@@ -50,11 +48,11 @@ test('exact counts finish without stock changes or adjustment logs', function ()
     $this->assertDatabaseCount('transaction_logs', 5);
     expect(app(AlertService::class)->compute()->pluck('id')->all())->not->toContain('A-CC-2203-VAR');
 });
-test('a count without a batch at its location is recorded without changing another location', function () {
+test('a variance without a matching batch is rejected', function () {
     $this->seed(DatabaseSeeder::class);
     CycleCount::findOrFail('CC-2203')->update(['location_id' => 1]);
-    $this->actingAs(User::where('email', 'nhimfa@walangbrownout.ph')->firstOrFail())->post('/counts/CC-2203/submit', ['counted_qty' => 40])->assertRedirect('/counts');
-    $this->assertDatabaseHas('cycle_counts', ['id' => 'CC-2203', 'counted_qty' => 40, 'status' => 'DONE']);
+    $this->actingAs(User::where('email', 'nhimfa@walangbrownout.ph')->firstOrFail())->post('/counts/CC-2203/submit', ['counted_qty' => 40])->assertSessionHasErrors('counted_qty');
+    $this->assertDatabaseHas('cycle_counts', ['id' => 'CC-2203', 'counted_qty' => null, 'status' => 'IN_PROGRESS']);
     $this->assertDatabaseHas('inventory_batches', ['id' => 'B-1090', 'quantity_remaining' => 42]);
     $this->assertDatabaseCount('transaction_logs', 5);
 });

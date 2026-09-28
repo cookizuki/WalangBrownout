@@ -11,7 +11,6 @@ class EnsureNavigationAccess
     public function handle(Request $request, Closure $next): Response
     {
         if ($user = $request->user()) {
-            abort_if($user->status === 'Inactive' && ! $request->routeIs('logout'), 403, 'This account is inactive.');
             if ($request->isMethod('GET')) {
                 foreach (config('navigation.pages') as $key => $page) {
                     if ('/'.$request->path() === $page['url']) {

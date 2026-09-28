@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
+use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Services\PurchaseOrderReceivingService;
 use Illuminate\Console\Command;
@@ -30,6 +31,7 @@ class BackfillPurchaseOrderReceivingLines extends Command
             }
             try {
                 $line = DB::transaction(function () use ($receiving, $order) {
+                    Product::whereKey($order->sku)->lockForUpdate()->firstOrFail();
                     $locked = PurchaseOrder::lockForUpdate()->findOrFail($order->id);
                     if ($locked->status !== 'APPROVED') {
                         return null;

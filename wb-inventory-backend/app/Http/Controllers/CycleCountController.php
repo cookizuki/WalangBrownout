@@ -50,16 +50,26 @@ class CycleCountController extends Controller
             $quantity = (int) $data['counted_qty'];
             $variance = $quantity - $count->system_qty;
             if ($variance !== 0) {
-                $batch = InventoryBatch::where('sku', $count->sku)->where('location_id', $count->location_id)->orderBy('id')->lockForUpdate()->first();
-                if ($batch) {
-                    $remaining = max(0, $batch->quantity_remaining + $variance);
+                $batches = InventoryBatch::where('sku', $count->sku)->where('location_id', $count->location_id)
+                    ->orderBy('date_received')->orderBy('id')->lockForUpdate()->get();
+                if ($batches->isEmpty() || ($variance < 0 && $batches->sum('quantity_remaining') < -$variance)) {
+                    throw ValidationException::withMessages(['counted_qty' => 'There is insufficient stock at this location to apply this variance.']);
+                }
+                $unapplied = $variance;
+                foreach ($variance > 0 ? collect([$batches->last()]) : $batches as $batch) {
+                    $delta = $unapplied > 0 ? $unapplied : -min($batch->quantity_remaining, -$unapplied);
+                    if ($delta === 0) {
+                        continue;
+                    }
+                    $remaining = $batch->quantity_remaining + $delta;
                     if ($remaining > 2147483647) {
                         throw ValidationException::withMessages(['counted_qty' => 'The resulting quantity exceeds the stock limit.']);
                     }
                     $batch->update(['quantity_remaining' => $remaining]);
                     TransactionLog::create(['id' => 'T-'.Str::ulid(), 'batch_id' => $batch->id, 'sku' => $count->sku,
-                        'user_id' => $request->user()->id, 'type' => 'ADJUSTMENT', 'quantity_delta' => $variance,
+                        'user_id' => $request->user()->id, 'type' => 'ADJUSTMENT', 'quantity_delta' => $delta,
                         'channel' => 'WAREHOUSE', 'timestamp' => now()]);
+                    $unapplied -= $delta;
                 }
             }
             $count->update(['counted_qty' => $quantity, 'status' => 'DONE']);
@@ -93,7 +103,7 @@ class CycleCountController extends Controller
                 throw ValidationException::withMessages(['recount' => 'The recount reference has reached its maximum length.']);
             }
             CycleCount::create(['id' => $id, 'sku' => $count->sku, 'location_id' => $count->location_id,
-                'system_qty' => $count->system_qty, 'counted_qty' => null, 'due_date' => now('UTC')->toDateString(), 'status' => 'PENDING']);
+                'system_qty' => $count->system_qty, 'counted_qty' => null, 'due_date' => now()->toDateString(), 'status' => 'PENDING']);
             AuditLog::create([
                 'id' => 'AU-'.Str::ulid(),
                 'user_id' => $request->user()->id,

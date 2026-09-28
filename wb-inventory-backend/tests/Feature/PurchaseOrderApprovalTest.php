@@ -24,7 +24,7 @@ test('approved orders enter the receiving queue with the latest batch location a
     expect($line->sku)->toBe('ACU-014')->and($line->supplier_id)->toBe(1)
         ->and($line->quantity_ordered)->toBe(800)->and($line->quantity_received)->toBe(0)
         ->and($line->status)->toBe('IN_TRANSIT')->and($line->location_id)->toBe(3)
-        ->and($line->expected_date->toDateString())->toBe(today('UTC')->addDays(Product::findOrFail('ACU-014')->lead_time_days)->toDateString());
+        ->and($line->expected_date->toDateString())->toBe(today()->addDays(Product::findOrFail('ACU-014')->lead_time_days)->toDateString());
     $this->post('/admin/po-approvals/PO-2041/approve')->assertSessionHasErrors('decision');
     expect(ReceivingLine::where('po_number', 'PO-2041')->count())->toBe(1);
     $this->actingAs(User::where('email', 'nhimfa@walangbrownout.ph')->firstOrFail());

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\InventoryBatch;
+use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\ReceivingLine;
 use App\Models\TransactionLog;
@@ -40,13 +41,14 @@ class ReceivingController extends Controller
     {
         $data = $request->validate(['quantity' => ['required', 'integer', 'min:1', 'max:2147483647'], 'expiration_date' => ['required', 'date_format:Y-m-d']]);
         $batch = DB::transaction(function () use ($line, $request, $data): InventoryBatch {
+            Product::whereKey($line->sku)->lockForUpdate()->firstOrFail();
             $order = PurchaseOrder::whereKey($line->po_number)->lockForUpdate()->first();
             $line = ReceivingLine::lockForUpdate()->findOrFail($line->id);
             $remaining = $line->quantity_ordered - $line->quantity_received;
             if ($line->status === 'PUT_AWAY' || $data['quantity'] > $remaining) {
                 throw ValidationException::withMessages(['quantity' => "Quantity received cannot exceed the remaining quantity of {$remaining} units."]);
             }
-            $today = now('UTC')->toDateString();
+            $today = now()->toDateString();
             $batch = InventoryBatch::create([
                 'id' => 'B-'.Str::ulid(), 'sku' => $line->sku, 'location_id' => $line->location_id,
                 'quantity_received' => $data['quantity'], 'quantity_remaining' => $data['quantity'],

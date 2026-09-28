@@ -12,7 +12,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
     $this->withoutVite();
-    $this->travelTo(CarbonImmutable::parse('2026-09-26 12:00:00', 'UTC'));
+    $this->travelTo(CarbonImmutable::parse('2026-09-26 12:00:00', 'Asia/Manila'));
 });
 test('admin reports match independently calculated seed totals and estimated history', function () {
     $this->seed(DatabaseSeeder::class);

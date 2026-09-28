@@ -62,5 +62,5 @@ test('non admins cannot manage users or view audit trail', function (string $rol
     $this->actingAs(User::factory()->create(['role' => $role]));
     $this->get('/admin/audit')->assertForbidden();
     $this->post('/admin/users', [])->assertForbidden();
-    $this->put('/admin/users/1', [])->assertForbidden();
+    $this->put('/admin/users/'.User::where('email', 'kim@walangbrownout.ph')->value('id'), [])->assertForbidden();
 })->with(['INVENTORY_STAFF', 'WAREHOUSE_STAFF']);

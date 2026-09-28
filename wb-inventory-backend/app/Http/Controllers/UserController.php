@@ -43,11 +43,12 @@ class UserController extends Controller
         $data = $this->validateUser($request, $user);
         DB::transaction(function () use ($request, $user, $data): void {
             $admins = User::where('role', 'ADMIN')->where('status', 'Active')->lockForUpdate()->get();
-            if ($user->id === $request->user()->id && ($data['role'] !== 'ADMIN' || $data['status'] !== 'Active')) {
-                throw ValidationException::withMessages(['role' => 'You cannot remove your own administrator access.']);
-            }
+            $user = User::lockForUpdate()->findOrFail($user->id);
             if ($admins->count() <= 1 && $admins->contains('id', $user->id) && ($data['role'] !== 'ADMIN' || $data['status'] !== 'Active')) {
                 throw ValidationException::withMessages(['role' => 'At least one active administrator is required.']);
+            }
+            if ($user->id === $request->user()->id && ($data['role'] !== 'ADMIN' || $data['status'] !== 'Active')) {
+                throw ValidationException::withMessages(['role' => 'You cannot remove your own administrator access.']);
             }
             if (empty($data['password'])) {
                 unset($data['password']);

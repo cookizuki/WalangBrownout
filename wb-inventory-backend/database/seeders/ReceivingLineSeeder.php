@@ -11,7 +11,7 @@ class ReceivingLineSeeder extends Seeder
     {
         $rows = [
             ['id' => 'RC-7701', 'po_number' => 'PO-3320', 'sku' => 'ACU-014', 'supplier_id' => 1, 'quantity_ordered' => 300, 'quantity_received' => 0, 'expected_date' => '2026-08-19', 'location_id' => 1, 'status' => 'IN_TRANSIT'],
-            ['id' => 'RC-7702', 'po_number' => 'PO-3321', 'sku' => 'APU-100', 'supplier_id' => 2, 'quantity_ordered' => 200, 'quantity_received' => 200, 'expected_date' => '2026-08-17', 'location_id' => 2, 'status' => 'ARRIVED'],
+            ['id' => 'RC-7702', 'po_number' => 'PO-3321', 'sku' => 'APU-100', 'supplier_id' => 2, 'quantity_ordered' => 200, 'quantity_received' => 200, 'expected_date' => '2026-08-17', 'location_id' => 2, 'status' => 'PUT_AWAY', 'received_date' => '2026-08-17'],
             ['id' => 'RC-7703', 'po_number' => 'PO-3318', 'sku' => 'FAN-050', 'supplier_id' => 1, 'quantity_ordered' => 80, 'quantity_received' => 80, 'expected_date' => '2026-08-14', 'location_id' => 1, 'status' => 'PUT_AWAY', 'received_date' => '2026-08-15'],
             ['id' => 'RC-7704', 'po_number' => 'PO-3322', 'sku' => 'THM-201', 'supplier_id' => 3, 'quantity_ordered' => 60, 'quantity_received' => 0, 'expected_date' => '2026-08-22', 'location_id' => 3, 'status' => 'IN_TRANSIT'],
             ['id' => 'RC-7690', 'po_number' => 'PO-3305', 'sku' => 'ACU-014', 'supplier_id' => 1, 'quantity_ordered' => 200, 'quantity_received' => 200, 'expected_date' => '2026-06-10', 'location_id' => 1, 'status' => 'PUT_AWAY', 'received_date' => '2026-06-10'],

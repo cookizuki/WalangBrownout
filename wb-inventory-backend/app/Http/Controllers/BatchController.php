@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Http\Requests\BatchAdjustmentRequest;
 use App\Models\AuditLog;
 use App\Models\InventoryBatch;
+use App\Models\Product;
 use App\Models\TransactionLog;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -24,7 +25,7 @@ class BatchController extends Controller
         $query = $filters['q'] ?? '';
         $needle = mb_strtolower($query);
         $pickOrders = [];
-        $now = CarbonImmutable::now('UTC')->getTimestamp();
+        $now = CarbonImmutable::now()->getTimestamp();
 
         $batches = InventoryBatch::query()->with(['product', 'location'])
             ->orderBy('sku')->orderBy('date_received')->orderBy('id')->get()
@@ -46,7 +47,7 @@ class BatchController extends Controller
                     'quantityRemaining' => $batch->quantity_remaining,
                     'dateReceived' => $batch->date_received->toDateString(),
                     'expirationDate' => $expiry,
-                    'daysLeft' => $expiry === null ? null : (int) ceil((CarbonImmutable::parse($expiry, 'UTC')->getTimestamp() - $now) / 86400),
+                    'daysLeft' => $expiry === null ? null : (int) ceil((CarbonImmutable::parse($expiry)->getTimestamp() - $now) / 86400),
                     'pickOrder' => $pickOrder,
                 ];
             })->values();
@@ -65,8 +66,12 @@ class BatchController extends Controller
         $delta = $data['reason'] === 'CORRECTION' ? $quantity : -abs($quantity);
 
         DB::transaction(function () use ($batch, $request, $data, $delta): void {
+            Product::whereKey($batch->sku)->lockForUpdate()->firstOrFail();
             $lockedBatch = InventoryBatch::query()->lockForUpdate()->findOrFail($batch->id);
-            $remaining = max(0, $lockedBatch->quantity_remaining + $delta);
+            $remaining = $lockedBatch->quantity_remaining + $delta;
+            if ($remaining < 0) {
+                throw ValidationException::withMessages(['quantity' => 'The reduction exceeds the remaining stock.']);
+            }
             if ($remaining > 2147483647) {
                 throw ValidationException::withMessages(['quantity' => 'The resulting quantity exceeds the stock limit.']);
             }

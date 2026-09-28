@@ -65,7 +65,7 @@ class PurchaseOrderController extends Controller
                 $po = PendingPurchaseOrder::create([
                     'id' => 'PO-'.Str::ulid(), 'supplier_id' => $product->supplier_id, 'sku' => $product->sku,
                     'quantity' => $data['quantity'], 'total_cost' => intdiv($cents, 100).'.'.str_pad((string) ($cents % 100), 2, '0', STR_PAD_LEFT),
-                    'requested_by' => $request->user()->id, 'requested_at' => now('UTC')->toDateString(),
+                    'requested_by' => $request->user()->id, 'requested_at' => now()->toDateString(),
                 ]);
                 AuditLog::create([
                     'id' => 'AU-'.Str::ulid(),

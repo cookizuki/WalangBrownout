@@ -13,7 +13,9 @@ class InventoryBatch extends Model
      * Matches the TS InventoryBatch.id and is referenced by transaction_logs.batch_id.
      */
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -21,13 +23,17 @@ class InventoryBatch extends Model
         'sku',
         'location_id',
         'quantity_received',
+        'opening_quantity',
+        'opening_recorded_at',
         'quantity_remaining',
         'date_received',
         'expiration_date',
     ];
 
     protected $casts = [
-        'date_received'   => 'date',
+        'opening_quantity' => 'integer',
+        'opening_recorded_at' => 'datetime',
+        'date_received' => 'date',
         'expiration_date' => 'date',
     ];
 
@@ -50,4 +56,3 @@ class InventoryBatch extends Model
         return $this->hasMany(TransactionLog::class, 'batch_id', 'id');
     }
 }
-

@@ -73,7 +73,7 @@ test('authorized adjustments persist stock and a transaction attributed to the s
     $this->get('/batches')->assertInertia(fn (Assert $page) => $page->where('batches.0.quantityRemaining', 335));
 })->with(['kim@walangbrownout.ph', 'nhimfa@walangbrownout.ph']);
 
-test('adjustment signs and zero clamping match the prototype', function (string $reason, int $quantity, int $remaining, int $delta) {
+test('valid adjustments log the actual stock delta', function (string $reason, int $quantity, int $remaining, int $delta) {
     $this->seed(DatabaseSeeder::class);
     $this->actingAs(User::where('email', 'nhimfa@walangbrownout.ph')->firstOrFail());
 
@@ -84,7 +84,6 @@ test('adjustment signs and zero clamping match the prototype', function (string 
 })->with([
     ['DAMAGE', -5, 335, -5], ['LOSS', 5, 335, -5], ['LOSS', -5, 335, -5],
     ['CORRECTION', 10, 350, 10], ['CORRECTION', -10, 330, -10],
-    ['DAMAGE', 500, 0, -500], ['CORRECTION', -500, 0, -500],
 ]);
 
 test('inventory staff cannot post adjustments', function () {

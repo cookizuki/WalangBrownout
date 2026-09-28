@@ -101,7 +101,7 @@ class ReportController extends Controller
 
     public function turnover(): array
     {
-        $cutoff = CarbonImmutable::now('UTC')->subDays(90);
+        $cutoff = CarbonImmutable::now()->subDays(90);
 
         return $this->products()->map(function (Product $p) use ($cutoff): array {
             $stock = (int) $p->batches_sum_quantity_remaining;
@@ -115,7 +115,7 @@ class ReportController extends Controller
 
     public function deadStock(): array
     {
-        $now = CarbonImmutable::now('UTC');
+        $now = CarbonImmutable::now();
 
         return $this->products()->map(function (Product $p) use ($now): array {
             $last = $this->transactions()->where('sku', $p->sku)->where('type', 'SALE')->sortByDesc('timestamp')->first();
@@ -130,7 +130,7 @@ class ReportController extends Controller
 
     public function supplierPerformance(): array
     {
-        $today = CarbonImmutable::today('UTC');
+        $today = CarbonImmutable::today();
 
         return Supplier::orderBy('id')->get()->map(function (Supplier $supplier) use ($today): array {
             $lines = $this->receiving()->where('supplier_id', $supplier->id);

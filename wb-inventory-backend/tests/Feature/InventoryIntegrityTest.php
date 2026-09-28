@@ -26,33 +26,35 @@ test('manual backfill creates only missing approved lines and is safe to rerun',
     $line = ReceivingLine::where('po_number', 'PO-OLD')->sole();
     expect($line->status)->toBe('IN_TRANSIT')->and($line->quantity_received)->toBe(0)
         ->and($line->quantity_ordered)->toBe(60)->and($line->location_id)->toBe(3)
-        ->and($line->expected_date->toDateString())->toBe(today('UTC')->addDays($order->product->lead_time_days)->toDateString());
+        ->and($line->expected_date->toDateString())->toBe(today()->addDays($order->product->lead_time_days)->toDateString());
     $this->assertDatabaseMissing('receiving_lines', ['po_number' => 'PO-REJECTED']);
     $this->artisan('po:backfill-receiving-lines')->expectsOutput('Backfilled 0 receiving line(s). Failed: 0.')->assertSuccessful();
     expect(ReceivingLine::where('po_number', 'PO-OLD')->count())->toBe(1);
     $this->assertDatabaseCount('audit_logs', 1);
 });
 
-test('consistency diagnostic reports exact numbers without changing stock or logs', function () {
-    $before = DB::table('inventory_batches')->orderBy('id')->get()->toJson();
-    expect(Artisan::call('inventory:verify-consistency', ['--json' => true]))->toBe(1);
-    $report = json_decode(Artisan::output(), true, flags: JSON_THROW_ON_ERROR);
-    expect($report['checked'])->toBe(7);
-    $batch = collect($report['mismatches'])->firstWhere('batch_id', 'B-1090');
-    expect($batch)->toMatchArray(['quantity_received' => 80, 'sum_deltas' => -5, 'expected_remaining' => 75, 'actual_remaining' => 42, 'difference' => -33]);
-    $receipt = collect($report['mismatches'])->firstWhere('batch_id', 'B-1120');
-    expect($receipt)->toMatchArray(['quantity_received' => 200, 'sum_deltas' => 200, 'expected_remaining' => 400, 'actual_remaining' => 200, 'receipt_deltas' => 200]);
-    expect(DB::table('inventory_batches')->orderBy('id')->get()->toJson())->toBe($before);
-    $this->assertDatabaseCount('transaction_logs', 5);
-    $this->assertDatabaseCount('audit_logs', 0);
-});
-
-test('diagnostic succeeds for a reconciled ledger', function () {
-    foreach (InventoryBatch::withSum('transactionLogs', 'quantity_delta')->get() as $batch) {
-        $batch->update(['quantity_remaining' => $batch->quantity_received + (int) $batch->transaction_logs_sum_quantity_delta]);
-    }
+test('seeded opening balances reconcile without fabricated historical transactions', function () {
     expect(Artisan::call('inventory:verify-consistency', ['--json' => true]))->toBe(0);
     expect(json_decode(Artisan::output(), true)['mismatches'])->toBe([]);
+    $this->assertDatabaseCount('transaction_logs', 5);
+});
+
+test('diagnostic identifies drift after opening without changing stock', function () {
+    InventoryBatch::findOrFail('B-1090')->update(['quantity_remaining' => 41]);
+    expect(Artisan::call('inventory:verify-consistency', ['--json' => true]))->toBe(1);
+    $report = json_decode(Artisan::output(), true);
+    expect($report['mismatches'])->toHaveCount(1);
+    expect($report['mismatches'][0])->toMatchArray(['batch_id' => 'B-1090', 'opening_quantity' => 42, 'sum_deltas' => 0, 'expected_remaining' => 42, 'actual_remaining' => 41]);
+    $this->assertDatabaseCount('transaction_logs', 5);
+});
+
+test('receipts are not double counted and subsequent movements reconcile', function () {
+    $this->actingAs(User::where('email', 'nhimfa@walangbrownout.ph')->firstOrFail());
+    $this->post('/receiving/RC-7704/receive', ['quantity' => 10, 'expiration_date' => '2028-01-01'])->assertSessionHasNoErrors();
+    $batch = InventoryBatch::where('id', 'not like', 'B-11%')->whereNull('opening_quantity')->sole();
+    $this->post('/movements', ['batch_id' => $batch->id, 'type' => 'WRITE_OFF', 'quantity' => 3])->assertSessionHasNoErrors();
+    $this->post('/movements', ['batch_id' => 'B-1090', 'type' => 'RETURN', 'quantity' => 2])->assertSessionHasNoErrors();
+    expect(Artisan::call('inventory:verify-consistency', ['--json' => true]))->toBe(0);
 });
 
 test('partial receipt leaves a PO approved and final receipt marks it received', function () {

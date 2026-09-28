@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\PendingPurchaseOrder;
+use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\UserNotification;
 use App\Services\PurchaseOrderReceivingService;
@@ -46,6 +47,10 @@ class PurchaseOrderApprovalController extends Controller
     private function resolve(Request $request, string $id, bool $approved, ?string $reason = null): RedirectResponse
     {
         DB::transaction(function () use ($request, $id, $approved, $reason): void {
+            $sku = PendingPurchaseOrder::whereKey($id)->value('sku');
+            if ($sku !== null) {
+                Product::whereKey($sku)->lockForUpdate()->firstOrFail();
+            }
             $po = PendingPurchaseOrder::whereKey($id)->lockForUpdate()->first();
             if (! $po) {
                 throw ValidationException::withMessages(['decision' => 'This purchase order is no longer pending. Refresh the approval queue.']);
