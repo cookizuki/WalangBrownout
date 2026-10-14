@@ -4,9 +4,9 @@ Real-time inventory management for WalangBrownout Appliances. *Walang Kulang, Wa
 
 Built with **Laravel + Inertia.js + React (TypeScript) + MySQL**, running in **Docker Compose**.
 
-> **Course:** _[course code / name]_  
-> **Instructor:** _[professor]_  
-> **Team:** _[member names]_
+> **Course:** CCS112 / Application Development and Emerging Technology  
+> **Instructor:** Sir. Joseph Cartagenas  
+> **Team:** Kim M. Maturan & Nick Merilles
 
 ## Repository layout
 
