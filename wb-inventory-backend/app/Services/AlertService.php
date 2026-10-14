@@ -9,9 +9,36 @@ use App\Models\Product;
 use App\Models\ReceivingLine;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class AlertService
 {
+    public function openCount(): int
+    {
+        $stock = DB::table('inventory_batches')->select('sku')->selectRaw('SUM(quantity_remaining) AS quantity')->groupBy('sku');
+        $mysql = DB::connection()->getDriverName() === 'mysql';
+        $alertId = fn (string $column, string $suffix): string => $mysql
+            ? "CONCAT('A-', {$column}, '{$suffix}')"
+            : "'A-' || {$column} || '{$suffix}'";
+        $products = DB::table('products')->leftJoinSub($stock, 'stock', 'stock.sku', '=', 'products.sku')
+            ->whereRaw('COALESCE(stock.quantity, 0) <= CASE WHEN seasonal_flag = 1 THEN ROUND(avg_daily_usage * COALESCE(seasonal_factor, 1) * lead_time_days + safety_stock) ELSE avg_daily_usage * lead_time_days + safety_stock END')
+            ->selectRaw($alertId('products.sku', '-ROP').' AS alert_id');
+        $expiry = DB::table('inventory_batches')->whereNotNull('expiration_date')
+            ->where('expiration_date', '<=', CarbonImmutable::now()->addDays(30)->startOfDay())
+            ->selectRaw($alertId('id', '-EXP').' AS alert_id');
+        $overdue = DB::table('receiving_lines')->where('status', '!=', 'PUT_AWAY')
+            ->whereColumn('quantity_received', '<', 'quantity_ordered')
+            ->where('expected_date', '<', CarbonImmutable::today()->toDateString())
+            ->selectRaw($alertId('id', '-OVERDUE').' AS alert_id');
+        $variance = DB::table('cycle_counts')->whereNotNull('counted_qty')->whereColumn('counted_qty', '!=', 'system_qty')
+            ->selectRaw($alertId('id', '-VAR').' AS alert_id');
+
+        return DB::query()->fromSub($products->unionAll($expiry)->unionAll($overdue)->unionAll($variance), 'live_alerts')
+            ->whereNotExists(fn ($query) => $query->selectRaw('1')->from('alert_acknowledgements')
+                ->whereColumn('alert_acknowledgements.alert_id', 'live_alerts.alert_id'))
+            ->count();
+    }
+
     public function open(): Collection
     {
         $acknowledged = AlertAcknowledgement::pluck('alert_id')->flip();
@@ -23,9 +50,9 @@ class AlertService
     {
         $alerts = collect();
         $now = CarbonImmutable::now();
-        $products = Product::query()->orderBy('sku')->get()->keyBy('sku');
+        $products = Product::query()->withSum('batches', 'quantity_remaining')->orderBy('sku')->get()->keyBy('sku');
         foreach ($products as $product) {
-            $stock = $product->onHand();
+            $stock = (int) $product->batches_sum_quantity_remaining;
             $rop = $product->seasonal_flag ? $product->ropSeasonal() : $product->ropStandard();
             if ($stock <= $rop) {
                 $factor = $product->seasonal_factor === null ? 'undefined' : (string) (float) $product->seasonal_factor;

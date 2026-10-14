@@ -64,6 +64,20 @@ test('turnover includes the exact cutoff and uses the unrounded rate for days', 
     InventoryBatch::where('sku', 'THM-201')->update(['quantity_remaining' => 0]);
     expect(collect((new ReportController)->turnover())->pluck('sku')->all())->not->toContain('THM-201');
 });
+
+test('turnover excludes the second before a fractional cutoff', function () {
+    $this->seed(DatabaseSeeder::class);
+    $this->travelTo(CarbonImmutable::parse('2026-09-26 12:00:00.500000', 'Asia/Manila'));
+    TransactionLog::where('type', 'SALE')->delete();
+    $user = User::firstOrFail();
+    foreach (['2026-06-28 12:00:00' => 100, '2026-06-28 12:00:01' => 2] as $timestamp => $quantity) {
+        TransactionLog::create([
+            'id' => 'BOUNDARY-'.$quantity, 'sku' => 'THM-201', 'batch_id' => 'B-1090', 'user_id' => $user->id,
+            'type' => 'SALE', 'quantity_delta' => -$quantity, 'timestamp' => $timestamp, 'channel' => 'WAREHOUSE',
+        ]);
+    }
+    expect(collect((new ReportController)->turnover())->firstWhere('sku', 'THM-201')['unitsSoldPeriod'])->toBe(2);
+});
 test('dead stock floors elapsed days and uses all bucket boundaries', function (int $days, ?string $bucket) {
     $this->seed(DatabaseSeeder::class);
     TransactionLog::where('sku', 'THM-201')->where('type', 'SALE')->update(['timestamp' => now()->subDays($days)->subHours(23)]);

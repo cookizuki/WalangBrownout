@@ -1,0 +1,10 @@
+.git
+.env
+node_modules
+vendor
+public/hot
+public/perf-probe.php
+storage/logs
+storage/framework/testing
+test-results
+playwright-report

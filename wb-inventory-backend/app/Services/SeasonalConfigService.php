@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\SeasonalWindow;
 use App\Models\TransactionLog;
+use Illuminate\Support\Collection;
 
 class SeasonalConfigService
 {
@@ -15,6 +16,20 @@ class SeasonalConfigService
             return ['suggested' => null, 'sampleSize' => 0];
         }
         $sales = TransactionLog::where('sku', $sku)->where('type', 'SALE')->get();
+
+        return $this->suggestion($window, $sales);
+    }
+
+    public function suggestSeasonalMultipliers(Collection $windows): Collection
+    {
+        $sales = TransactionLog::whereIn('sku', $windows->keys())->where('type', 'SALE')
+            ->get(['sku', 'timestamp', 'quantity_delta'])->groupBy('sku');
+
+        return $windows->map(fn (SeasonalWindow $window): array => $this->suggestion($window, $sales->get($window->sku, collect())));
+    }
+
+    private function suggestion(SeasonalWindow $window, Collection $sales): array
+    {
         $empty = ['suggested' => null, 'sampleSize' => $sales->count()];
         if ($sales->count() < 3) {
             return $empty;

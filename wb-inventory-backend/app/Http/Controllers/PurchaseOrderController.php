@@ -21,9 +21,9 @@ class PurchaseOrderController extends Controller
     public function index(Request $request, SeasonalConfigService $seasonal): Response
     {
         $pending = PendingPurchaseOrder::pluck('sku')->flip();
-        $products = Product::with('supplier')->orderBy('sku')->get();
+        $products = Product::with('supplier')->withSum('batches', 'quantity_remaining')->orderBy('sku')->get();
         $rows = $products->map(function (Product $product) use ($pending, $request): array {
-            $stock = $product->onHand();
+            $stock = (int) $product->batches_sum_quantity_remaining;
             $rop = $product->seasonal_flag ? $product->ropSeasonal() : $product->ropStandard();
             $adu = (float) $product->avg_daily_usage;
             $factor = (float) ($product->seasonal_factor ?? 1);
@@ -41,13 +41,14 @@ class PurchaseOrderController extends Controller
             ];
         })->filter(fn (array $row): bool => $row['gap'] >= 0)->sortByDesc('gap')->values();
         $windows = SeasonalWindow::all()->keyBy('sku');
+        $suggestions = $seasonal->suggestSeasonalMultipliers($windows);
 
         return Inertia::render('Reorder/Index', [
             'rows' => $rows,
             'seasonalProducts' => $products->filter(fn (Product $p): bool => $p->seasonal_flag)->map(fn (Product $p): array => [
                 'sku' => $p->sku, 'name' => $p->name, 'multiplier' => (float) ($p->seasonal_factor ?? 1),
                 'window' => ['startMonth' => $windows->get($p->sku)?->start_month ?? 4, 'endMonth' => $windows->get($p->sku)?->end_month ?? 6],
-                'suggestion' => $seasonal->suggestSeasonalMultiplier($p->sku),
+                'suggestion' => $suggestions->get($p->sku, ['suggested' => null, 'sampleSize' => 0]),
             ])->values(),
         ]);
     }

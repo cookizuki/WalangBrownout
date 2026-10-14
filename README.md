@@ -59,6 +59,8 @@ docker compose build
 docker compose up -d
 
 # 3. Install PHP dependencies and generate the app key
+# (vendor/ lives in a Docker named volume for speed, so this step is
+#  required after a fresh clone and after `docker compose down -v`)
 docker compose exec app composer install
 docker compose exec app php artisan key:generate
 
@@ -77,6 +79,16 @@ Then open **http://localhost:8000**.
 | Application (nginx) | http://localhost:8000 |
 | MySQL (from the host, e.g. a GUI client) | `127.0.0.1:3307` (container port 3306) |
 | Vite dev server | http://localhost:5173 (assets only, not the app) |
+
+### Faster demo mode
+
+The Vite dev server loads many unbundled files and is the slowest way to view the app. For a demo, build the assets once, stop `npm run dev`, and use the built version:
+
+```bash
+npm run build
+```
+
+Then open http://localhost:8000. Rebuild after any front-end change.
 
 To reset the database to its seeded state:
 
@@ -129,8 +141,10 @@ docker compose exec app php artisan test
 The suite can also run against the MySQL container, which matches the production database engine more closely than SQLite:
 
 ```bash
-docker compose exec app php artisan test --configuration=phpunit.mysql.xml
+docker compose exec app ./vendor/bin/pest --configuration=phpunit.mysql.xml
 ```
+
+(Artisan's `test` command does not pass the `--configuration` option through correctly, so run Pest directly for the MySQL suite.)
 
 ## Maintenance commands
 
@@ -163,6 +177,9 @@ Alerts are **not** stored. They are computed from live data on each request, and
 - **Seeded batches use an opening balance.** The seed data starts some batches below their received quantity with no transactions explaining the difference. The consistency check treats the seeded quantity as a baseline and only flags drift from activity after seeding.
 - **Shared demo password.** All seeded accounts use the same password. Change or remove them before any real deployment.
 - **Local Docker setup only.** No hosting or production deployment configuration is included. Before deploying, set `APP_ENV=production` and `APP_DEBUG=false`, and replace the database credentials.
+- **Audit write failures at login/logout are reported, not blocking.** If writing the audit entry for a sign-in or sign-out fails, the failure is logged but the user is not blocked from signing in or out.
+- **Pagination.** Batches and the Transaction Log are paginated at 50 rows, and the Audit Log shows its most recent 500 entries.
+- **Request time on Windows.** Most of the remaining request time is PHP bootstrap and the Windows-mounted source files. Running the project inside the WSL2 Linux filesystem would reduce it further.
 - **Vite runs on the host,** not in a container, to avoid slow file watching over Docker volumes.
 - **Dependency pins.** `package.json` pins Vite 7 and `laravel-vite-plugin` 2.x to stay compatible with `@vitejs/plugin-react`. Do not bump these casually.
 
@@ -175,3 +192,6 @@ Alerts are **not** stored. They are computed from live data on each request, and
 | White page or Vite manifest error | Make sure `npm run dev` is running. |
 | Database connection refused | `DB_HOST` must be `mysql` (the service name), not `localhost`. |
 | Changes to `.env` not applied | `docker compose exec app php artisan config:clear` |
+| `vendor/autoload.php` not found, or a blank 500 after a fresh clone | `vendor/` lives in a Docker volume, so run `docker compose exec app composer install`. |
+| `Unknown column` or other schema errors on an old database | The database was migrated before a migration changed. Run `docker compose exec app php artisan migrate:fresh --seed` (this wipes all data). |
+| App feels slow | Run `npm run build` and stop `npm run dev`, then use http://localhost:8000. |

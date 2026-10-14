@@ -6,6 +6,7 @@ services:
     container_name: wb_app
     volumes:
       - .:/var/www/html
+      - wb_vendor:/var/www/html/vendor
     depends_on:
       - mysql
     networks:
@@ -46,3 +47,4 @@ networks:
 
 volumes:
   wb_mysql_data:
+  wb_vendor:

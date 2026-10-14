@@ -24,38 +24,35 @@ class BatchController extends Controller
         $filters = $request->validate(['q' => ['nullable', 'string', 'max:255']]);
         $query = $filters['q'] ?? '';
         $needle = mb_strtolower($query);
-        $pickOrders = [];
         $now = CarbonImmutable::now()->getTimestamp();
 
-        $batches = InventoryBatch::query()->with(['product', 'location'])
-            ->orderBy('sku')->orderBy('date_received')->orderBy('id')->get()
-            ->filter(fn (InventoryBatch $batch): bool => $needle === ''
-                || str_contains(mb_strtolower($batch->sku), $needle)
-                || str_contains(mb_strtolower($batch->product->name), $needle))
-            ->map(function (InventoryBatch $batch) use (&$pickOrders, $now): array {
-                $pickOrder = null;
-                if ($batch->quantity_remaining > 0) {
-                    $pickOrder = ($pickOrders[$batch->sku] ?? 0) + 1;
-                    $pickOrders[$batch->sku] = $pickOrder;
-                }
-                $expiry = $batch->expiration_date?->toDateString();
+        $matchingSkus = $needle === '' ? [] : Product::get(['sku', 'name'])
+            ->filter(fn (Product $product): bool => str_contains(mb_strtolower($product->sku), $needle)
+                || str_contains(mb_strtolower($product->name), $needle))->pluck('sku');
+        $page = InventoryBatch::query()->with('location')->select('inventory_batches.*')
+            ->selectRaw('CASE WHEN quantity_remaining > 0 THEN SUM(CASE WHEN quantity_remaining > 0 THEN 1 ELSE 0 END) OVER (PARTITION BY sku ORDER BY date_received, id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) ELSE NULL END AS pick_order')
+            ->when($needle !== '', fn ($builder) => $builder->whereIn('sku', $matchingSkus))
+            ->orderBy('sku')->orderBy('date_received')->orderBy('id')->simplePaginate(50)->withQueryString();
+        $batches = $page->getCollection()->map(function (InventoryBatch $batch) use ($now): array {
+            $expiry = $batch->expiration_date?->toDateString();
 
-                return [
-                    'id' => $batch->id,
-                    'sku' => $batch->sku,
-                    'locationCode' => $batch->location->code,
-                    'quantityRemaining' => $batch->quantity_remaining,
-                    'dateReceived' => $batch->date_received->toDateString(),
-                    'expirationDate' => $expiry,
-                    'daysLeft' => $expiry === null ? null : (int) ceil((CarbonImmutable::parse($expiry)->getTimestamp() - $now) / 86400),
-                    'pickOrder' => $pickOrder,
-                ];
-            })->values();
+            return [
+                'id' => $batch->id,
+                'sku' => $batch->sku,
+                'locationCode' => $batch->location->code,
+                'quantityRemaining' => $batch->quantity_remaining,
+                'dateReceived' => $batch->date_received->toDateString(),
+                'expirationDate' => $expiry,
+                'daysLeft' => $expiry === null ? null : (int) ceil((CarbonImmutable::parse($expiry)->getTimestamp() - $now) / 86400),
+                'pickOrder' => $batch->pick_order === null ? null : (int) $batch->pick_order,
+            ];
+        })->values();
 
         return Inertia::render('Batches/Index', [
             'batches' => $batches,
             'filters' => ['q' => $query],
             'canAdjust' => $request->user()->hasRole(Role::ADMIN, Role::WAREHOUSE_STAFF),
+            'pagination' => ['page' => $page->currentPage(), 'previous' => $page->previousPageUrl(), 'next' => $page->nextPageUrl()],
         ]);
     }
 

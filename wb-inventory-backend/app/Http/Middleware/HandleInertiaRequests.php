@@ -37,7 +37,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'shell' => fn () => $request->user() ? [
                 'navigation' => collect(config('navigation.roles.'.$request->user()->role->value, []))->map(fn (string $key): array => ['key' => $key, ...config('navigation.pages.'.$key)])->values(),
-                'openAlerts' => app(AlertService::class)->open()->count(),
+                'openAlerts' => app(AlertService::class)->openCount(),
             ] : null,
             'fifoMessage' => fn () => $request->session()->get('fifoMessage'),
             'movementOptions' => fn () => $request->user()?->hasRole(Role::ADMIN, Role::WAREHOUSE_STAFF) ? [

@@ -3,9 +3,10 @@ import { Head, router } from '@inertiajs/react';
 import { CheckCircle2 } from 'lucide-react';
 import { Th, Td, AnimatedRow, EmptyState, SectionLabel, titleCase } from '@/Components/ui-bits';
 import { TxTypeBadge, type TxType } from '@/lib/txTypeStyles';
+import { PaginationLinks, type PageLinks } from '@/Components/PaginationLinks';
 const TX_TYPES: (TxType | 'ALL')[] = ['ALL', 'SALE', 'RECEIPT', 'RETURN', 'ADJUSTMENT', 'TRANSFER', 'WRITE_OFF'];
 type Transaction = { id: string; sku: string; productName: string; batchId: string | null; type: TxType; quantityDelta: number; userId: number; timestamp: string; channel: string };
-export default function TransactionLog({ transactions, filters }: { transactions: Transaction[]; filters: { q: string; type: TxType | 'ALL' } }) {
+export default function TransactionLog({ transactions, filters, pagination }: { transactions: Transaction[]; filters: { q: string; type: TxType | 'ALL' }; pagination: PageLinks }) {
   const [q, setQ] = useState(filters.q);
   const [type, setType] = useState(filters.type);
   useEffect(() => {
@@ -66,6 +67,7 @@ export default function TransactionLog({ transactions, filters }: { transactions
             </tbody>
           </table>
         </div>
+        <PaginationLinks pagination={pagination} />
         <p className="border-t border-border px-5 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">
           Adjustments raised from stock counts and damage reports appear here automatically
         </p>

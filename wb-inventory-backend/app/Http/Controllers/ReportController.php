@@ -6,9 +6,9 @@ use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\ReceivingLine;
 use App\Models\Supplier;
-use App\Models\TransactionLog;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,7 +16,9 @@ class ReportController extends Controller
 {
     private ?Collection $catalog = null;
 
-    private ?Collection $logs = null;
+    private ?Collection $sales = null;
+
+    private ?Collection $recentSales = null;
 
     private ?Collection $receipts = null;
 
@@ -27,9 +29,23 @@ class ReportController extends Controller
         return $this->catalog ??= Product::withSum('batches', 'quantity_remaining')->orderBy('sku')->get()->keyBy('sku');
     }
 
-    private function transactions(): Collection
+    private function sales(): Collection
     {
-        return $this->logs ??= TransactionLog::orderBy('id')->get();
+        return $this->sales ??= DB::table('transaction_logs')->where('type', 'SALE')->select('sku')
+            ->selectRaw('SUM(ABS(quantity_delta)) AS units, MAX(timestamp) AS last_sale, MIN(id) AS first_id')
+            ->groupBy('sku')->orderBy('first_id')->get()->keyBy('sku');
+    }
+
+    private function recentSales(): Collection
+    {
+        $cutoff = CarbonImmutable::now()->subDays(90);
+        if ($cutoff->microsecond > 0) {
+            $cutoff = $cutoff->addSecond()->startOfSecond();
+        }
+
+        return $this->recentSales ??= DB::table('transaction_logs')->where('type', 'SALE')
+            ->where('timestamp', '>=', $cutoff)->select('sku')
+            ->selectRaw('SUM(ABS(quantity_delta)) AS units')->groupBy('sku')->get()->keyBy('sku');
     }
 
     private function receiving(): Collection
@@ -57,12 +73,15 @@ class ReportController extends Controller
     public function shrinkage(): array
     {
         $buckets = [];
-        foreach ($this->transactions() as $tx) {
-            if (! (($tx->type === 'ADJUSTMENT' && $tx->quantity_delta < 0) || $tx->type === 'WRITE_OFF')) {
-                continue;
-            }
-            $label = $tx->timestamp->format('M Y');
-            $units = abs($tx->quantity_delta);
+        $month = DB::connection()->getDriverName() === 'mysql'
+            ? "DATE_FORMAT(timestamp, '%Y-%m-01')" : "strftime('%Y-%m-01', timestamp)";
+        $losses = DB::table('transaction_logs')->where(fn ($query) => $query->where('type', 'WRITE_OFF')
+            ->orWhere(fn ($query) => $query->where('type', 'ADJUSTMENT')->where('quantity_delta', '<', 0)))
+            ->select('sku')->selectRaw("{$month} AS month, SUM(ABS(quantity_delta)) AS units")
+            ->groupBy('sku')->groupByRaw($month)->get();
+        foreach ($losses as $tx) {
+            $label = CarbonImmutable::parse($tx->month)->format('M Y');
+            $units = (int) $tx->units;
             $buckets[$label] ??= ['label' => $label, 'units' => 0, 'cost' => 0];
             $buckets[$label]['units'] += $units;
             $buckets[$label]['cost'] += $units * (float) ($this->products()->get($tx->sku)?->unit_cost ?? 0);
@@ -74,10 +93,10 @@ class ReportController extends Controller
 
     public function velocity(): array
     {
-        return $this->transactions()->where('type', 'SALE')->groupBy('sku')->map(function (Collection $sales, string $sku): array {
+        return $this->sales()->map(function (object $sales, string $sku): array {
             $product = $this->products()->get($sku);
 
-            return ['sku' => $sku, 'units' => $sales->sum(fn ($t): int => abs($t->quantity_delta)), 'name' => $product?->name ?? $sku, 'abc' => $product?->abc ?? 'C'];
+            return ['sku' => $sku, 'units' => (int) $sales->units, 'name' => $product?->name ?? $sku, 'abc' => $product?->abc ?? 'C'];
         })->sortByDesc('units')->values()->all();
     }
 
@@ -101,11 +120,9 @@ class ReportController extends Controller
 
     public function turnover(): array
     {
-        $cutoff = CarbonImmutable::now()->subDays(90);
-
-        return $this->products()->map(function (Product $p) use ($cutoff): array {
+        return $this->products()->map(function (Product $p): array {
             $stock = (int) $p->batches_sum_quantity_remaining;
-            $units = $this->transactions()->filter(fn ($t): bool => $t->sku === $p->sku && $t->type === 'SALE' && $t->timestamp->greaterThanOrEqualTo($cutoff))->sum(fn ($t): int => abs($t->quantity_delta));
+            $units = (int) ($this->recentSales()->get($p->sku)?->units ?? 0);
             $rate = $stock > 0 ? ($units / $stock) * (365 / 90) : null;
 
             return ['sku' => $p->sku, 'name' => $p->name, 'abc' => $p->abc, 'unitsSoldPeriod' => $units, 'avgOnHand' => $stock,
@@ -118,13 +135,14 @@ class ReportController extends Controller
         $now = CarbonImmutable::now();
 
         return $this->products()->map(function (Product $p) use ($now): array {
-            $last = $this->transactions()->where('sku', $p->sku)->where('type', 'SALE')->sortByDesc('timestamp')->first();
-            $days = $last ? (int) floor(($now->getTimestamp() - $last->timestamp->getTimestamp()) / 86400) : null;
+            $last = $this->sales()->get($p->sku)?->last_sale;
+            $lastDate = $last === null ? null : CarbonImmutable::parse($last);
+            $days = $lastDate ? (int) floor(($now->getTimestamp() - $lastDate->getTimestamp()) / 86400) : null;
             $effective = $days ?? INF;
             $stock = (int) $p->batches_sum_quantity_remaining;
 
             return ['sku' => $p->sku, 'name' => $p->name, 'abc' => $p->abc, 'onHand' => $stock, 'daysSinceLastSale' => $days,
-                'lastSaleDate' => $last?->timestamp->toDateString(), 'bucket' => $effective >= 180 ? '180+' : ($effective >= 90 ? '90+' : ($effective >= 60 ? '60+' : '30+')), 'tiedUpValue' => $stock * (float) $p->unit_cost];
+                'lastSaleDate' => $lastDate?->toDateString(), 'bucket' => $effective >= 180 ? '180+' : ($effective >= 90 ? '90+' : ($effective >= 60 ? '60+' : '30+')), 'tiedUpValue' => $stock * (float) $p->unit_cost];
         })->filter(fn (array $row): bool => $row['onHand'] > 0 && ($row['daysSinceLastSale'] === null || $row['daysSinceLastSale'] >= 30))->sortByDesc(fn (array $row): float => $row['daysSinceLastSale'] ?? INF)->values()->all();
     }
 

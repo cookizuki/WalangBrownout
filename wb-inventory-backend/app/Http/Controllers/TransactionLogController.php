@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Product;
 use App\Models\TransactionLog;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -19,21 +20,24 @@ class TransactionLogController extends Controller
         $type = $filters['type'] ?? 'ALL';
         $query = $filters['q'] ?? '';
         $needle = mb_strtolower($query);
-        $transactions = TransactionLog::query()->with(['product', 'batch'])
+        $matchingSkus = $needle === '' ? [] : Product::get(['sku', 'name'])
+            ->filter(fn (Product $product): bool => str_contains(mb_strtolower($product->sku), $needle)
+                || str_contains(mb_strtolower($product->name), $needle))->pluck('sku');
+        $page = TransactionLog::query()->with(['product', 'batch'])
             ->when($type !== 'ALL', fn ($builder) => $builder->where('type', $type))
-            ->orderByDesc('timestamp')->orderByDesc('id')->get()
-            ->filter(fn (TransactionLog $transaction): bool => $needle === ''
-                || str_contains(mb_strtolower($transaction->sku), $needle)
-                || str_contains(mb_strtolower($transaction->product->name), $needle)
-                || str_contains(mb_strtolower($transaction->batch?->id ?? ''), $needle))
-            ->map(fn (TransactionLog $transaction): array => [
-                'id' => $transaction->id, 'sku' => $transaction->sku,
-                'productName' => $transaction->product->name, 'batchId' => $transaction->batch?->id,
-                'type' => $transaction->type, 'quantityDelta' => $transaction->quantity_delta,
-                'userId' => $transaction->user_id, 'timestamp' => $transaction->timestamp->toISOString(),
-                'channel' => $transaction->channel,
-            ])->values();
+            ->when($needle !== '', fn ($builder) => $builder->where(fn ($query) => $query->whereIn('sku', $matchingSkus)
+                ->orWhereRaw('INSTR(LOWER(batch_id), ?) > 0', [$needle])))
+            ->orderByDesc('timestamp')->orderByDesc('id')->simplePaginate(50)->withQueryString();
+        $transactions = $page->getCollection()->map(fn (TransactionLog $transaction): array => [
+            'id' => $transaction->id, 'sku' => $transaction->sku,
+            'productName' => $transaction->product->name, 'batchId' => $transaction->batch?->id,
+            'type' => $transaction->type, 'quantityDelta' => $transaction->quantity_delta,
+            'userId' => $transaction->user_id, 'timestamp' => $transaction->timestamp->toISOString(),
+            'channel' => $transaction->channel,
+        ])->values();
 
-        return Inertia::render('TransactionLog/Index', ['transactions' => $transactions, 'filters' => ['q' => $query, 'type' => $type]]);
+        return Inertia::render('TransactionLog/Index', ['transactions' => $transactions, 'filters' => ['q' => $query, 'type' => $type],
+            'pagination' => ['page' => $page->currentPage(), 'previous' => $page->previousPageUrl(), 'next' => $page->nextPageUrl()],
+        ]);
     }
 }

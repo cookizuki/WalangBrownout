@@ -4,14 +4,15 @@ import { PackageSearch } from 'lucide-react';
 import { Th, Td, AnimatedRow, EmptyState } from '@/Components/ui-bits';
 import { GlareHover } from '@/Components/GlareHover';
 import { AdjustmentForm } from '@/Components/AdjustmentForm';
+import { PaginationLinks, type PageLinks } from '@/Components/PaginationLinks';
 
 type Batch = {
   id: string; sku: string; locationCode: string; quantityRemaining: number;
   dateReceived: string; expirationDate: string | null; daysLeft: number | null; pickOrder: number | null;
 };
 
-export default function BatchesIndex({ batches, canAdjust, filters }: {
-  batches: Batch[]; canAdjust: boolean; filters: { q: string };
+export default function BatchesIndex({ batches, canAdjust, filters, pagination }: {
+  batches: Batch[]; canAdjust: boolean; filters: { q: string }; pagination: PageLinks;
 }) {
   const [adjusting, setAdjusting] = useState<string | null>(null);
   const [q, setQ] = useState(filters.q);
@@ -111,6 +112,7 @@ export default function BatchesIndex({ batches, canAdjust, filters }: {
             </tbody>
           </table>
         </div>
+        <PaginationLinks pagination={pagination} />
         <p className="border-t border-border px-5 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">
           Days-left countdown drives the expiry markdown flag · pick-order badge #1 = oldest lot with stock remaining
         </p>

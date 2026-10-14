@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -34,16 +35,25 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
-        AuditLog::create([
-            'id' => 'AU-'.Str::ulid(),
-            'user_id' => $request->user()->id,
-            'user_name' => $request->user()->name,
-            'action' => 'Signed in',
-            'target' => $request->user()->email,
-            'timestamp' => now(),
-        ]);
+        $this->recordAudit($request, 'Signed in');
 
         return redirect()->intended(route('dashboard', absolute: false));
+    }
+
+    private function recordAudit(Request $request, string $action): void
+    {
+        try {
+            AuditLog::create([
+                'id' => 'AU-'.Str::ulid(),
+                'user_id' => $request->user()->id,
+                'user_name' => $request->user()->name,
+                'action' => $action,
+                'target' => $request->user()->email,
+                'timestamp' => now(),
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     /**
@@ -51,14 +61,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        AuditLog::create([
-            'id' => 'AU-'.Str::ulid(),
-            'user_id' => $request->user()->id,
-            'user_name' => $request->user()->name,
-            'action' => 'Signed out',
-            'target' => $request->user()->email,
-            'timestamp' => now(),
-        ]);
+        $this->recordAudit($request, 'Signed out');
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
